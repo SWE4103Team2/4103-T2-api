@@ -1,15 +1,15 @@
 # Setup
-#### Beforehand
+### Beforehand
 Go through the setup of the ui first so that you have the global packages (yarn, npm).
 
-#### Git
+### Git
 Get the ssh key as described in the ui README.
 
 Run:
 > git remote add origin **ssh**
 > git pull
 
-#### Startup
+### Startup
 Run:
 >yarn
 
