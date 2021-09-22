@@ -6,9 +6,9 @@ Go through the setup of the ui first so that you have the global packages (yarn,
 Get the https key as described in the ui README.
 
 Run:
-> git remote add origin **https**
+> git clone **https**
 
-(ssh being the link from git)
+(https being the link from git)
 
 > git pull
 
