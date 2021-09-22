@@ -3,10 +3,10 @@
 Go through the setup of the ui first so that you have the global packages (yarn, npm).
 
 ### Git
-Get the ssh key as described in the ui README.
+Get the https key as described in the ui README.
 
 Run:
-> git remote add origin **ssh**
+> git remote add origin **https**
 
 (ssh being the link from git)
 
