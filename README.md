@@ -3,14 +3,7 @@
 Go through the setup of the ui first so that you have the global packages (yarn, npm).
 
 ### Git
-Get the https key as described in the ui README.
-
-Run:
-> git clone **https**
-
-(https being the link from git)
-
-> git pull
+In the works
 
 ### Startup
 Run:
