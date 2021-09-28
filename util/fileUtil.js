@@ -2,7 +2,9 @@ const FileReader = require('filereader');
 const { invalidData, courseData, personData, transferData } = require('../config/fileTypes');
 
 const readFile = (file) => {
-  // May not need this -- depends if we find a way to send files to api.
+  const data = file.buffer.toString('utf-8');
+
+  return data;
 }
 
 const splitByNewLine = (string) => {
