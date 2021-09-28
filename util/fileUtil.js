@@ -1,22 +1,15 @@
-import { invalidData, courseData, personData, transferData } from "../config/fileTypes";
+const FileReader = require('filereader');
+const { invalidData, courseData, personData, transferData } = require('../config/fileTypes');
 
-export const readFile = (file) => {
-  const reader = new FileReader();
-  let data = null;
-
-  reader.onload = e => {
-    data = e.target.value
-  }
-  reader.readAsText(file);
-
-  return data;
+const readFile = (file) => {
+  // May not need this -- depends if we find a way to send files to api.
 }
 
-export const splitByNewLine = (string) => {
+const splitByNewLine = (string) => {
   return string.split('\n');
 };
 
-export const splitByTab = (string) => {
+const splitByTab = (string) => {
   return string.split('\t');
 }
 
@@ -25,7 +18,7 @@ const courseDataHeading = "";
 const personDataHeading = "";
 const transferDataHeading = "";
 
-export const checkFileType = (string) => {
+const checkFileType = (string) => {
   if (string === courseDataHeading) {
     return courseData;
   } else if (string === personDataHeading) {
@@ -36,3 +29,5 @@ export const checkFileType = (string) => {
     return invalidData;
   }
 }
+
+module.exports = { readFile, splitByNewLine, splitByTab, checkFileType };
