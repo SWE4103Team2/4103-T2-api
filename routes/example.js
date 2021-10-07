@@ -1,12 +1,17 @@
 const express = require('express');
 const axios = require('axios');
 let router = express.Router();
-
+const { Sequelize } = require('sequelize');
 router.get('/', async (req, res) => {
   try {
-    res.json({ success: true, value: 'Hello!' });
+    const sequelize = new Sequelize('SWE4103T2', 'admin', 'PQzU$5vchmev!T2d%w8yCGosfqg%q#!9hcLN%c', {
+      host: 'themis.xn--9xa.network',
+      dialect:'mariadb'
+    });
+    const [results, metadata] = await sequelize.query("Select * from Student");
+    res.json(results);
   } catch (err) {
-    next(err);
+    console.error(err);
   }
 });
 
