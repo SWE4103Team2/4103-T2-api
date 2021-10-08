@@ -21,3 +21,8 @@ Run:
 
 Then Run:
 >yarn start
+
+### .env
+DB_NAME=SWE4103T2
+DB_USERNAME=admin
+DB_PASSWORD=PQzU$5vchmev!T2d%w8yCGosfqg%q#!9hcLN%c

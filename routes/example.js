@@ -1,10 +1,11 @@
 const express = require('express');
 const axios = require('axios');
+require('dotenv');
 let router = express.Router();
 const { Sequelize } = require('sequelize');
 router.get('/', async (req, res) => {
   try {
-    const sequelize = new Sequelize('SWE4103T2', 'admin', 'PQzU$5vchmev!T2d%w8yCGosfqg%q#!9hcLN%c', {
+    const sequelize = new Sequelize(process.env.DB_NAME, process.env.DB_USERNAME, process.env.DB_PASSWORD, {
       host: 'themis.xn--9xa.network',
       dialect:'mariadb'
     });
