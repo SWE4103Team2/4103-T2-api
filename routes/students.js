@@ -10,7 +10,7 @@ router.get('/', async (req, res) => {
       host: 'themis.xn--9xa.network',
       dialect:'mariadb'
     });
-    const [results, metadata] = await sequelize.query("SELECT student_ID, Name, Start_Date, Program FROM Student");
+    const [results, metadata] = await sequelize.query("SELECT student_ID, Name, Start_Date, Program FROM Student WHERE fileID = '" + req.query.file + "'");
     res.json(results);
   } catch (err) {
     console.error(err);
@@ -23,7 +23,7 @@ router.get('/getStudent', async (req, res) => {
       host: 'themis.xn--9xa.network',
       dialect:'mariadb'
     });
-    const [results, metadata] = await sequelize.query("SELECT student_ID, Name, Start_Date, Program FROM Student WHERE student_ID = " + studentID);
+    const [results, metadata] = await sequelize.query("SELECT student_ID, Name, Start_Date, Program FROM Student WHERE fileID = '" + req.query.file + "' AND student_ID = " + studentID);
     res.json(results);
   } catch (err) {
     console.error(err);
