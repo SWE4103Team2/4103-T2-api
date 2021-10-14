@@ -15,13 +15,13 @@ router.post('/students', async (req, res, next) => {
     keys[1] = 'Name';
     splitData.shift();
 
-    const studentData = splitData.map((line, i) => {
+    const studentData = splitData.map(line => {
       const split = splitByTab(line);
       const obj = { fileID: fileName };
 
-      keys.forEach((key, j) => {
-        if (split.length > j && split[j]) {
-          obj[key] = split[j];
+      keys.forEach((key, i) => {
+        if (split.length > i && split[i]) {
+          obj[key] = split[i];
         }
       });
 
