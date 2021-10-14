@@ -19,8 +19,10 @@ db.sequelize.sync();
 const port = process.env.PORT || 3001;
 const example = require('./routes/example.js');
 const upload = require('./routes/upload.js');
+const students = require('./routes/students.js');
 
 app.use('/example', example);
 app.use('/upload', upload);
+app.use('/students', students);
 
 app.listen(port, () => console.log('App listening on port', port));
