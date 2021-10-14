@@ -12,6 +12,9 @@ app.use(cors({
 app.use(multerFile.array('file'));
 app.use(express.static('public'));
 
+const db = require('./models');
+db.sequelize.sync();
+
 
 const port = process.env.PORT || 3001;
 const example = require('./routes/example.js');
