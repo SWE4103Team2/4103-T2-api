@@ -6,7 +6,12 @@ let router = express.Router();
 
 router.get('/', async (req, res) => {
   try {
-    const fileTimeTable = await db.Student.findAll({ attributes: ['Student_ID', 'Name', 'Start_Date', 'Program'], where: {'fileID' : req.query.file}});
+    const fileTimeTable = await db.Student.findAll({ 
+      attributes: ['Student_ID', 'Name', 'Start_Date', 'Program'], 
+      where: {
+        'fileID' : req.query.file
+      }
+    });
     const fileList = fileTimeTable.map( row => {
       return row.dataValues;
     });
@@ -17,7 +22,13 @@ router.get('/', async (req, res) => {
 });
 router.get('/getStudent', async (req, res) => {
   try {
-    const fileTimeTable = await db.Student.findAll({ attributes: ['Student_ID', 'Name', 'Start_Date', 'Program'], where: {'fileID' : req.query.file, 'Student_ID' : req.query.id}});
+    const fileTimeTable = await db.Student.findAll({ 
+      attributes: ['Student_ID', 'Name', 'Start_Date', 'Program'], 
+      where: {
+        'fileID' : req.query.file, 
+        'Student_ID' : req.query.id
+      }
+    });
     const fileList = fileTimeTable.map( row => {
       return row.dataValues;
     });
@@ -29,7 +40,12 @@ router.get('/getStudent', async (req, res) => {
 
 router.get('/getFiles', async (req, res) => {
   try {
-    const fileTimeTable = await db.FileTime.findAll({ attributes: ['fileID'], order: [['fileID', 'DESC']] });
+    const fileTimeTable = await db.FileTime.findAll({ 
+      attributes: ['fileID'], 
+      order: [
+        ['fileID', 'DESC']
+      ]
+    });
     const fileList = fileTimeTable.map( row => {
       return row.dataValues;
     });
