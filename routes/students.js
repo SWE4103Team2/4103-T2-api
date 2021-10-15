@@ -1,30 +1,27 @@
 const express = require('express');
 const axios = require('axios');
+const db = require('../models/index');
 
 let router = express.Router();
 
-const { Sequelize } = require('sequelize');
 router.get('/', async (req, res) => {
   try {
-    const sequelize = new Sequelize('SWE4103T2', 'admin', 'PQzU$5vchmev!T2d%w8yCGosfqg%q#!9hcLN%c', {
-      host: 'themis.xn--9xa.network',
-      dialect:'mariadb'
+    const fileTimeTable = await db.Student.findAll({ attributes: ['Student_ID', 'Name', 'Start_Date', 'Program'], where: {'fileID' : req.query.file}});
+    const fileList = fileTimeTable.map( row => {
+      return row.dataValues;
     });
-    const [results, metadata] = await sequelize.query("SELECT student_ID, Name, Start_Date, Program FROM Student WHERE fileID = '" + req.query.file + "'");
-    res.json(results);
+    res.json(fileList);
   } catch (err) {
     console.error(err);
   }
 });
 router.get('/getStudent', async (req, res) => {
   try {
-    const studentID = req.query.id
-    const sequelize = new Sequelize('SWE4103T2', 'admin', 'PQzU$5vchmev!T2d%w8yCGosfqg%q#!9hcLN%c', {
-      host: 'themis.xn--9xa.network',
-      dialect:'mariadb'
+    const fileTimeTable = await db.Student.findAll({ attributes: ['Student_ID', 'Name', 'Start_Date', 'Program'], where: {'fileID' : req.query.file, 'Student_ID' : req.query.id}});
+    const fileList = fileTimeTable.map( row => {
+      return row.dataValues;
     });
-    const [results, metadata] = await sequelize.query("SELECT student_ID, Name, Start_Date, Program FROM Student WHERE fileID = '" + req.query.file + "' AND student_ID = " + studentID);
-    res.json(results);
+    res.json(fileList);
   } catch (err) {
     console.error(err);
   }
@@ -32,12 +29,11 @@ router.get('/getStudent', async (req, res) => {
 
 router.get('/getFiles', async (req, res) => {
   try {
-    const sequelize = new Sequelize('SWE4103T2', 'admin', 'PQzU$5vchmev!T2d%w8yCGosfqg%q#!9hcLN%c', {
-      host: 'themis.xn--9xa.network',
-      dialect:'mariadb'
+    const fileTimeTable = await db.FileTime.findAll({ attributes: ['fileID'], order: [['fileID', 'DESC']] });
+    const fileList = fileTimeTable.map( row => {
+      return row.dataValues;
     });
-    const [results, metadata] = await sequelize.query("SELECT fileID FROM Student GROUP BY fileID");
-    res.json(results);
+    res.json(fileList);
   } catch (err) {
     console.error(err);
   }
