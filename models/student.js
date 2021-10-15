@@ -6,7 +6,7 @@ module.exports = (sequelize, Sequelize) => {
       allowNull: false
     },
     Student_ID: {
-      type: Sequelize.INTEGER(7),
+      type: Sequelize.INTEGER(10),
       primaryKey: true,
       allowNull: false
     },
@@ -18,11 +18,15 @@ module.exports = (sequelize, Sequelize) => {
       type: Sequelize.DATEONLY
     },
     Email: {
-      type: Sequelize.STRING(30),
+      type: Sequelize.STRING(15),
       allowNull: false
     },
     Program: {
       type: Sequelize.STRING(10),
+      allowNull: false
+    }, 
+    Campus: {
+      type: Sequelize.STRING(2),
       allowNull: false
     }, 
   }, {
