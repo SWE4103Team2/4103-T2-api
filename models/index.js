@@ -10,6 +10,8 @@ const sequelize = new Sequelize(
 );
 
 const student = require('./student');
+const enrollment = require('./enrollment');
+const fileTime = require('./fileTime');
 
 const db = {};
 
@@ -17,5 +19,7 @@ db.Sequelize = Sequelize;
 db.sequelize = sequelize;
 
 db.Student = student(sequelize, Sequelize);
+db.Enrollment = enrollment(sequelize, Sequelize);
+db.FileTime = fileTime(sequelize, Sequelize);
 
 module.exports = db;
