@@ -1,36 +1,35 @@
 const express = require('express');
 const { readFile, splitByNewLine, splitByTab } = require('../util/fileUtil');
-const { Student } = require('../models');
+const { Student, Enrollment, FileTime } = require('../models');
 let router = express.Router();
 
-// Upload Students File
-router.post('/students', async (req, res, next) => {
+// Handles File Uploads
+router.post('/', async (req, res, next) => {
   try {
-    const { fileName } = req.query;
-    const file = req.files[0];
-    const data = readFile(file);
-    const splitData = splitByNewLine(data);
-    const keys = splitByTab(splitData[0]);
+    const { fileName, dataDate,  } = req.query;
+    const studentData = readFile(req.files[0]);
+    const courseData = readFile(req.files[1]);
+    const transferData = readFile(req.files[2]);
 
-    keys[1] = 'Name';
-    splitData.shift();
+    validateFiles(studentData, courseData, transferData);
 
-    const studentData = splitData.map(line => {
-      const split = splitByTab(line);
-      const obj = { fileID: fileName };
+    const students = formatStudentData(studentData);
+    const courses = formatCourseData(courseData);
+    const transfers = formatTransferData(transferData);
 
-      keys.forEach((key, i) => {
-        if (split.length > i && split[i]) {
-          obj[key] = split[i];
-        }
-      });
+    console.log(students);
+    console.log(courses);
+    console.log(transfers);
 
-      return obj;
-    });
+    /*
+    cosnt fileResult = await FileTime.create(idkyet);
+    const studentResult = await Student.bulkCreate(studentData);
+    const courseResult = await Course.bulkCreate(courseData);
+    const transferResult = await idk
 
-    const result = await Student.bulkCreate(studentData);
 
-    res.send(result);
+    res.send({ studentResult, courseResult, transferResult });
+    */
   } catch (err) {
     console.log(err.code);
     next(err);
