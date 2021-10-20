@@ -20,14 +20,15 @@ router.get('/', async (req, res) => {
     console.error(err);
   }
 });
-router.get('/getStudent', async (req, res) => {
+router.get('/getStudents', async (req, res) => {
   try {
+    const where = {'fileID' : req.query.file};
+    if(req.query.id !== ""){
+      where.Student_ID = req.query.id;
+    }
     const fileTimeTable = await db.Student.findAll({ 
       attributes: ['Student_ID', 'Name', 'Start_Date', 'Program'], 
-      where: {
-        'fileID' : req.query.file, 
-        'Student_ID' : req.query.id
-      }
+      where
     });
     const fileList = fileTimeTable.map( row => {
       return row.dataValues;
