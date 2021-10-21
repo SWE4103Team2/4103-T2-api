@@ -1,12 +1,13 @@
 const express = require('express');
-const { readFile, splitByNewLine, splitByTab } = require('../util/fileUtil');
-const { Student, Enrollment, FileTime } = require('../models');
 let router = express.Router();
+
+const { readFile } = require('../util/fileUtil');
+const { Student, Enrollment, FileTime } = require('../models');
 
 // Handles File Uploads
 router.post('/', async (req, res, next) => {
   try {
-    const { fileName, dataDate,  } = req.query;
+    const { fileName, program } = req.query;
     const studentData = readFile(req.files[0]);
     const courseData = readFile(req.files[1]);
     const transferData = readFile(req.files[2]);
