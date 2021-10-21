@@ -11,6 +11,7 @@ const readFile = (file) => {
   }
 };
 
+// Validates the files, else errors.
 const validateFiles = (students, courses, transfers) => {
   // Do some validation magic ***
 };
@@ -42,6 +43,6 @@ const getDataObj = (keys, linesArr, fileName) => {
   });
 
   return objArr;
-}
+};
 
 module.exports = { readFile, splitByNewLine, splitByTab, getDataObj };
