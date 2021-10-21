@@ -7,13 +7,13 @@ let router = express.Router();
 
 router.get('/', async (req, res) => {
   try {
-    const fileTimeTable = await db.Student.findAll({ 
+    const resultTable = await db.Student.findAll({ 
       attributes: ['Student_ID', 'Name', 'Start_Date', 'Program'], 
       where: {
         'fileID' : req.query.file
       }
     });
-    const fileList = fileTimeTable.map( row => {
+    const fileList = resultTable.map( row => {
       return row.dataValues;
     });
     res.json(fileList);
@@ -28,10 +28,27 @@ router.get('/getStudents', async (req, res) => {
     if(req.query.id !== ""){
       where.Student_ID = req.query.id;
     }
-    const fileTimeTable = await db.Student.findAll({ 
+    const resultTable = await db.Student.findAll({ 
       where
     });
-    const fileList = fileTimeTable.map( row => {
+    const fileList = resultTable.map( row => {
+      return row.dataValues;
+    });
+    res.json(fileList);
+  } catch (err) {
+    console.error(err);
+  }
+});
+
+router.get('/getEnrollment', async (req, res) => {
+  try {
+    const resultTable = await db.Enrollment.findAll({  
+      where: {
+        'fileID' : req.query.file,
+        'Student_ID' : req.query.id
+      }
+    });
+    const fileList = resultTable.map( row => {
       return row.dataValues;
     });
     res.json(fileList);
@@ -46,14 +63,14 @@ router.get('/getFiles', async (req, res) => {
     if(req.query.type !== undefined){
       where.program = req.query.type;
     }
-    const fileTimeTable = await db.FileTime.findAll({ 
+    const resultTable = await db.FileTime.findAll({ 
       attributes: ['fileID'], 
       where,
       order: [
         ['uploadTime', 'DESC']
       ]
     });
-    const fileList = fileTimeTable.map( row => {
+    const fileList = resultTable.map( row => {
       return row.dataValues;
     });
     res.json(fileList);
@@ -64,14 +81,14 @@ router.get('/getFiles', async (req, res) => {
 
 router.get('/getFileTypes', async (req, res) => {
   try {
-    const fileTimeTable = await db.FileTime.findAll({ 
+    const resultTable = await db.FileTime.findAll({ 
       attributes: ['program'], 
       order: [
         ['uploadTime', 'DESC']
       ],
       group: ['program']
     });
-    const fileList = fileTimeTable.map( row => {
+    const fileList = resultTable.map( row => {
       return row.dataValues;
     });
     res.json(fileList);
@@ -106,8 +123,8 @@ router.get('/getYear', async (req, res) =>{
       res.json([]);
       return;
     }
-    const fileTimeTable = await db.sequelize.query(SQLQuery);
-    res.json(fileTimeTable[0]);
+    const resultTable = await db.sequelize.query(SQLQuery);
+    res.json(resultTable[0]);
   } catch (err) {
     console.error(err);
   }
