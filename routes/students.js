@@ -21,6 +21,7 @@ router.get('/', async (req, res) => {
     console.error(err);
   }
 });
+
 router.get('/getStudents', async (req, res) => {
   try {
     const where = {'fileID' : req.query.file};
@@ -41,11 +42,34 @@ router.get('/getStudents', async (req, res) => {
 
 router.get('/getFiles', async (req, res) => {
   try {
+    const where = {};
+    if(req.query.type !== undefined){
+      where.program = req.query.type;
+    }
     const fileTimeTable = await db.FileTime.findAll({ 
       attributes: ['fileID'], 
+      where,
       order: [
         ['uploadTime', 'DESC']
       ]
+    });
+    const fileList = fileTimeTable.map( row => {
+      return row.dataValues;
+    });
+    res.json(fileList);
+  } catch (err) {
+    console.error(err);
+  }
+});
+
+router.get('/getFileTypes', async (req, res) => {
+  try {
+    const fileTimeTable = await db.FileTime.findAll({ 
+      attributes: ['program'], 
+      order: [
+        ['uploadTime', 'DESC']
+      ],
+      group: ['program']
     });
     const fileList = fileTimeTable.map( row => {
       return row.dataValues;
