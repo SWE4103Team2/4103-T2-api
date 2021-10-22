@@ -5,6 +5,12 @@ const e = require('express');
 
 let router = express.Router();
 
+/** 
+ * API end point to get all the columns of the student table with a specific fileID, optional Student_ID
+ * Parameters:
+ *    file = The file ID (REQUIRED)
+ *    id = The Student ID (OPTIONAL, set to "" to skip)  
+*/
 router.get('/getStudents', async (req, res) => {
   try {
     const where = {'fileID' : req.query.file};
@@ -23,6 +29,12 @@ router.get('/getStudents', async (req, res) => {
   }
 });
 
+/** 
+ * API end point to get all the columns of the Enrollment table for a specific fileID and Student_ID
+ * Parameters:
+ *    file = The file ID (REQUIRED)
+ *    id = The Student ID (REQUIRED)  
+*/
 router.get('/getEnrollment', async (req, res) => {
   try {
     const resultTable = await db.Enrollment.findAll({  
@@ -40,6 +52,11 @@ router.get('/getEnrollment', async (req, res) => {
   }
 });
 
+/**
+ * API end point to get the list of fileIDs from the FileTime table, optional program type
+ * Parameters:
+ *    type = The type of program the files have (OPTIONAL, set to undefined to skip)
+ */
 router.get('/getFiles', async (req, res) => {
   try {
     const where = {};
@@ -62,6 +79,11 @@ router.get('/getFiles', async (req, res) => {
   }
 });
 
+/**
+ * API end point to get the list of program types from the FileTime table
+ * Parameters:
+ *    NONE
+ */
 router.get('/getFileTypes', async (req, res) => {
   try {
     const resultTable = await db.FileTime.findAll({ 
@@ -80,6 +102,18 @@ router.get('/getFileTypes', async (req, res) => {
   }
 });
 
+/** 
+ * API end point to get year of a student from the student table with a specific fileID, optional Student_ID
+ * This requires an addional type variable for different calculation types
+ * Parameters:
+ *    file = The file ID (REQUIRED)
+ *    id = The Student ID (OPTIONAL, set to "" to skip)  
+ *    Type = the way you wish to calculate the year
+ *        - 0 = by credit hours, currently 40h repersents 1 year
+ *        - 1 = by exact start date, counts the years based of the current date
+ *        - 2 = by cohort, counts based of starting cohort
+ *        - Other = returns []
+*/
 router.get('/getYear', async (req, res) =>{
   try {
     let SQLQuery;
