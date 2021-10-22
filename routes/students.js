@@ -5,23 +5,6 @@ const e = require('express');
 
 let router = express.Router();
 
-router.get('/', async (req, res) => {
-  try {
-    const resultTable = await db.Student.findAll({ 
-      attributes: ['Student_ID', 'Name', 'Start_Date', 'Program'], 
-      where: {
-        'fileID' : req.query.file
-      }
-    });
-    const fileList = resultTable.map( row => {
-      return row.dataValues;
-    });
-    res.json(fileList);
-  } catch (err) {
-    console.error(err);
-  }
-});
-
 router.get('/getStudents', async (req, res) => {
   try {
     const where = {'fileID' : req.query.file};
