@@ -11,11 +11,6 @@ const readFile = (file) => {
   }
 };
 
-// Validates the files, else errors.
-const validateFiles = (students, courses, transfers) => {
-  // Do some validation magic ***
-};
-
 // Splits a string by each new line - filter removes empty lines.
 const splitByNewLine = (string) => {
   return string.split('\n').filter((x) => x)

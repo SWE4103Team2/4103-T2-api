@@ -17,8 +17,6 @@ router.post('/', async (req, res, next) => {
       throw 'MissingParameters';
     }
   
-    validateFiles(studentData, courseData, transferData);
-
     const students = formatStudentData(studentData);
     const courses = formatCourseData(courseData);
     const transfers = formatTransferData(transferData);
@@ -28,13 +26,17 @@ router.post('/', async (req, res, next) => {
     console.log(transfers);
 
     /*
-    cosnt fileResult = await FileTime.create({ fileID: fileName, program });
-    const studentResult = await Student.bulkCreate(studentData);
-    const courseResult = await Course.bulkCreate(courseData);
-    // const transferResult = await idk
+    try {
+      const fileResult = await FileTime.create({ fileID: fileName, program });
+      const studentResult = await Student.bulkCreate(studentData);
+      const courseResult = await Course.bulkCreate(courseData);
+      // const transferResult = await idk
+    } catch (err) {
+      // Remove all with this [fileName] if any error.
+    }
 
 
-    res.send({ studentResult, courseResult, transferResult });
+    res.send({ fileResult, studentResult, courseResult, transferResult });
     */
   } catch (err) {
     console.log(err.code);
