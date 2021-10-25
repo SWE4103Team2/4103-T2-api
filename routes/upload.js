@@ -36,13 +36,14 @@ router.post('/', async (req, res, next) => {
       await Enrollment.destroy({ where: { fileID: fileName } });
       // await Transfer.destroy({ where: { fileID: fileName } });
 
-      res.send(err);
+      res.status(500).send(err);
     }
 
     res.send({ fileResult, studentResult, courseResult, transferResult });
   } catch (err) {
     console.log(err);
-    next(err);
+
+    res.status(500).send(err);
   }
 });
 
