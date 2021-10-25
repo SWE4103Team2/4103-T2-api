@@ -6,24 +6,36 @@ const e = require('express');
 let router = express.Router();
 
 /** 
- * API end point to get all the columns of the student table with a specific fileID, optional Student_ID
+ * API end point to get all the students in the student table and all those enrolled but not in the student table with a specific fileID, optional Student_ID
  * Parameters:
  *    file = The file ID (REQUIRED)
  *    id = The Student ID (OPTIONAL, set to "" to skip)  
 */
 router.get('/getStudents', async (req, res) => {
   try {
-    const where = {'fileID' : req.query.file};
+    // const where = {'fileID' : req.query.file};
+    // if(req.query.id !== ""){
+    //   where.Student_ID = req.query.id;
+    // }
+    // const resultTable = await db.Student.findAll({ 
+    //   where
+    // });
+    // const fileList = resultTable.map( row => {
+    //   return row.dataValues;
+    // });
+    // res.json(fileList);
+    let SQLQuery = "SELECT Student.*, Enrollment.Student_ID AS 'EStuID' FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID WHERE Student.fileID = '" + req.query.file + "'";
     if(req.query.id !== ""){
-      where.Student_ID = req.query.id;
+      SQLQuery += " AND Student.Student_ID = '" + req.query.id + "'";
     }
-    const resultTable = await db.Student.findAll({ 
-      where
-    });
-    const fileList = resultTable.map( row => {
-      return row.dataValues;
-    });
-    res.json(fileList);
+    SQLQuery += " GROUP BY Student.Student_ID";
+    SQLQuery += " UNION ALL SELECT Student.*, Enrollment.Student_ID AS 'EStuID' FROM Student RIGHT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID WHERE Student.Student_ID IS NULL AND Enrollment.fileID  = '" + req.query.file + "'";
+    if(req.query.id !== ""){
+      SQLQuery += " AND Enrollment.Student_ID = '" + req.query.id + "'";
+    }
+    SQLQuery += " GROUP BY Enrollment.Student_ID";
+    const resultTable = await db.sequelize.query(SQLQuery);
+    res.json(resultTable[0]);
   } catch (err) {
     console.error(err);
   }
