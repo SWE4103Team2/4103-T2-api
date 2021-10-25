@@ -114,6 +114,12 @@ router.get('/getFileTypes', async (req, res) => {
   }
 });
 
+/**
+ * Adds the core course array into the database labeled with the users ID
+ * Parameters:
+ *    arr = The course array
+ *    id = the users ID, should be linked to their login ID, for now it can be any number
+ */
 router.get('/uploadXLSX', async (req, res) => {
   try {
     const result = {};
