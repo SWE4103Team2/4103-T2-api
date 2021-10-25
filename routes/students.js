@@ -102,16 +102,30 @@ router.get('/getFileTypes', async (req, res) => {
   }
 });
 
+router.get('/uploadXLSX', async (req, res) => {
+  try {
+    const result = {};
+    result.delete = await db.CoreCourse.destroy({where: {userID: req.query.id}})
+    result.insert = await db.CoreCourse.bulkCreate(req.query.arr.map(course => {return {userID: req.query.id, Course : course}}));
+    result.insert = result.insert.length;
+    res.json(result);
+  } catch (err) {
+    console.log(err);
+  }
+});
+
 /** 
  * API end point to get year of a student from the student table with a specific fileID, optional Student_ID
  * This requires an addional type variable for different calculation types
  * Parameters:
  *    file = The file ID (REQUIRED)
- *    id = The Student ID (OPTIONAL, set to "" to skip)  
+ *    id = The Student ID (OPTIONAL, set to "" to skip)
+ *    userID = The CoreCourse table ID (ONLY REQUIRED FOR type = 3)  
  *    Type = the way you wish to calculate the year
  *        - 0 = by credit hours, currently 40h repersents 1 year
  *        - 1 = by exact start date, counts the years based of the current date
  *        - 2 = by cohort, counts based of starting cohort
+ *        - 3 = by core courses, counts the number of core courses done by each student for the list that is currently loaded in CoreCourse
  *        - Other = returns []
 */
 router.get('/getYear', async (req, res) =>{
@@ -136,11 +150,34 @@ router.get('/getYear', async (req, res) =>{
         SQLQuery += " AND Student.Student_ID = '" + req.query.id + "'";
       }
     }
+    else if(req.query.type === "3"){    // 3 means by core Courses
+      SQLQuery = "SELECT COUNT(Enrollment.Student_ID) AS 'Year' FROM CoreCourse LEFT JOIN Enrollment ON CoreCourse.Course = Enrollment.Course AND CoreCourse.userID = " + req.query.userID + " RIGHT JOIN Student ON Student.Student_ID = Enrollment.Student_ID AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR') WHERE Student.fileID = '" + req.query.file + "'";
+      if(req.query.id !== ""){
+        SQLQuery += " AND Student.Student_ID = '" + req.query.id + "'";
+      }
+      SQLQuery += " GROUP BY Student.Student_ID";
+    }
     if(SQLQuery === undefined){
       res.json([]);
       return;
     }
     const resultTable = await db.sequelize.query(SQLQuery);
+    if(req.query.type === "3"){
+      for(let i = 0; i < resultTable[0].length; i++){
+        if(resultTable[0][i].Year < 13){
+          resultTable[0][i].Year = 1;
+        }
+        else if(resultTable[0][i].Year < 23){
+          resultTable[0][i].Year = 2;
+        }
+        else if(resultTable[0][i].Year < 31){
+          resultTable[0][i].Year = 3;
+        }
+        else{
+          resultTable[0][i].Year = 4;
+        }
+      }
+    }
     res.json(resultTable[0]);
   } catch (err) {
     console.error(err);
