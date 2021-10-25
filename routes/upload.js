@@ -21,23 +21,23 @@ router.post('/', async (req, res, next) => {
     const courses = formatCourseData(courseData);
     const transfers = formatTransferData(transferData);
 
-    console.log(students);
-    console.log(courses);
-    console.log(transfers);
+    let fileResult, studentResult, courseResult, transferResult;
 
-    /*
     try {
-      const fileResult = await FileTime.create({ fileID: fileName, program });
-      const studentResult = await Student.bulkCreate(studentData);
-      const courseResult = await Course.bulkCreate(courseData);
-      // const transferResult = await idk
+      fileResult = await FileTime.create({ fileID: fileName, program });
+      studentResult = await Student.bulkCreate(studentData);
+      courseResult = await Enrollment.bulkCreate(courseData);
+      transferResult = null // await idk
+
+      res.send({ fileResult, studentResult, courseResult, transferResult });
     } catch (err) {
-      // Remove all with this [fileName] if any error.
+      await FileTime.destroy({ where: { fileID: fileName } });
+      await Student.destroy({ where: { fileID: fileName } });
+      await Enrollment.destroy({ where: { fileID: fileName } });
+      // await Transfer.destroy({ where: { fileID: fileName } });
     }
 
-
     res.send({ fileResult, studentResult, courseResult, transferResult });
-    */
   } catch (err) {
     console.log(err.code);
     next(err);
