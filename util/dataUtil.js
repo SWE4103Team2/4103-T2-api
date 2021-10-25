@@ -1,4 +1,4 @@
-const { splitByNewLine, getDataObj } = require("./fileUtil");
+const { splitByTab, splitByNewLine, getDataObj } = require("./fileUtil");
 const { validateStudents, validateCourses, validateTransfers } = require("./fileValidators");
 
 const formatStudentData = (data, fileName) => {

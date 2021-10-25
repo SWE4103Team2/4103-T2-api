@@ -6,6 +6,7 @@ const sequelize = new Sequelize(
   {
     host: 'themis.xn--9xa.network',
     dialect: 'mariadb',
+    logging: false
   }
 );
 

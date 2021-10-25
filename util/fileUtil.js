@@ -13,7 +13,7 @@ const readFile = (file) => {
 
 // Splits a string by each new line - filter removes empty lines.
 const splitByNewLine = (string) => {
-  return string.split('\n').filter((x) => x)
+  return string.split('\n').filter((x) => x);
 };
 
 // Splits a string by tabs - replace removes special character '\r'.

@@ -8,8 +8,8 @@ const multerFile = multer();
 const app = express();
 
 // Implements Middleware
-app.use(cors({ origin: '*' }))
-app.use(multerFile.array('file'));
+app.use(cors({ origin: '*' }));
+app.use(multerFile.any());
 app.use(express.static('public'));
 
 // Syncs Database with Models

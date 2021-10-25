@@ -8,7 +8,9 @@ const validateStudents = (file) => {
     "Start_Date"
   ];
 
-  if (file !== header) {
+  const check = header.every(val => file.includes(val));
+
+  if (!check) {
     throw 'StudentFileException'
   }
 };
@@ -25,7 +27,9 @@ const validateCourses = (file) => {
     "Section"
   ];
 
-  if (file !== header) {
+  const check = header.every(val => file.includes(val));
+
+  if (!check) {
     throw 'CourseFileException'
   }
 };
@@ -39,7 +43,9 @@ const validateTransfers = (file) => {
     "Transfer_Date"
   ];
 
-  if (file !== header) {
+  const check = header.every(val => file.includes(val));
+
+  if (!check) {
     throw 'TransferFileException'
   }
 };

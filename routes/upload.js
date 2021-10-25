@@ -17,29 +17,31 @@ router.post('/', async (req, res, next) => {
       throw 'MissingParameters';
     }
   
-    const students = formatStudentData(studentData);
-    const courses = formatCourseData(courseData);
-    const transfers = formatTransferData(transferData);
+    const students = formatStudentData(studentData, fileName);
+    const courses = formatCourseData(courseData, fileName);
+    const transfers = formatTransferData(transferData, fileName);
 
     let fileResult, studentResult, courseResult, transferResult;
 
     try {
-      fileResult = await FileTime.create({ fileID: fileName, program });
-      studentResult = await Student.bulkCreate(studentData);
-      courseResult = await Enrollment.bulkCreate(courseData);
+      fileResult = await FileTime.create({ fileID: fileName, uploadTime: new Date(), program });
+      studentResult = await Student.bulkCreate(students, { ignoreDuplicates: [true] });
+      courseResult = await Enrollment.bulkCreate(courses, { ignoreDuplicates: [true] });
       transferResult = null // await idk
-
-      res.send({ fileResult, studentResult, courseResult, transferResult });
     } catch (err) {
+      console.log(err);
+
       await FileTime.destroy({ where: { fileID: fileName } });
       await Student.destroy({ where: { fileID: fileName } });
       await Enrollment.destroy({ where: { fileID: fileName } });
       // await Transfer.destroy({ where: { fileID: fileName } });
+
+      res.send(err);
     }
 
     res.send({ fileResult, studentResult, courseResult, transferResult });
   } catch (err) {
-    console.log(err.code);
+    console.log(err);
     next(err);
   }
 });
