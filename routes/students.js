@@ -2,6 +2,7 @@ const express = require('express');
 const axios = require('axios');
 const db = require('../models/index');
 const e = require('express');
+const { Op } = require("sequelize");
 
 let router = express.Router();
 
@@ -24,12 +25,17 @@ router.get('/', async (req, res) => {
 
 router.get('/getStudents', async (req, res) => {
   try {
-    const where = {'fileID' : req.query.file};
-    if(req.query.id !== ""){
-      where.Student_ID = req.query.id;
-    }
-    const fileTimeTable = await db.Student.findAll({ 
-      where
+    const fileTimeTable = await db.Student.findAll({  
+      where: {
+        'fileID' : req.query.file, 
+        [Op.or]: [
+          {'Student_ID' : {[Op.like]: "%" + req.query.srcVal + "%"}},
+          {'Name' : req.query.srcVal},
+          {'Start_Date' : req.query.srcVal},
+          {'Program' : req.query.srcVal}
+        ]
+        
+      }
     });
     const fileList = fileTimeTable.map( row => {
       return row.dataValues;

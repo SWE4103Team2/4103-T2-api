@@ -16,7 +16,7 @@ module.exports = (sequelize, Sequelize) => {
         allowNull: false
       },
       Grade: {
-        type: Sequelize.STRING(3)
+        type: Sequelize.STRING(5)
       },
       Term: {
         type: Sequelize.STRING(7),
@@ -25,15 +25,12 @@ module.exports = (sequelize, Sequelize) => {
       },
       Section: {
         type: Sequelize.STRING(5),
-        allowNull: false
       }, 
       Title: {
         type: Sequelize.STRING(50),
-        allowNull: false
       }, 
       Credit_Hrs: {
-        type: Sequelize.FLOAT,
-        allowNull: false
+        type: Sequelize.STRING(5),
       }, 
     }, {
       freezeTableName: true,
