@@ -16,7 +16,13 @@ router.post('/', async (req, res, next) => {
     if (!fileName || !program) {
       throw 'MissingParameters';
     }
-  
+    
+    const doesFileNameExist = await FileTime.findAll({where: { fileID: fileName}});
+    if(doesFileNameExist.length !== 0){
+      res.status(500).send('FileNameExistsException');
+      return;
+    }
+
     const students = formatStudentData(studentData, fileName);
     const courses = formatCourseData(courseData, fileName);
     const transfers = formatTransferData(transferData, fileName);
@@ -29,7 +35,7 @@ router.post('/', async (req, res, next) => {
       courseResult = await Enrollment.bulkCreate(courses, { ignoreDuplicates: [true] });
       transferResult = null // await idk
     } catch (err) {
-      console.log(err);
+      //console.log(err);
 
       await FileTime.destroy({ where: { fileID: fileName } });
       await Student.destroy({ where: { fileID: fileName } });
@@ -37,6 +43,7 @@ router.post('/', async (req, res, next) => {
       // await Transfer.destroy({ where: { fileID: fileName } });
 
       res.status(500).send(err);
+      return;
     }
 
     res.send({ fileResult, studentResult, courseResult, transferResult });
