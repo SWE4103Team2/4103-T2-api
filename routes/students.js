@@ -144,6 +144,7 @@ router.get('/uploadXLSX', async (req, res) => {
  *        - 1 = by exact start date, counts the years based of the current date
  *        - 2 = by cohort, counts based of starting cohort
  *        - 3 = by core courses, counts the number of core courses done by each student for the list that is currently loaded in CoreCourse
+ *        - 4 = by SWE requirements, means by the fixed SWE requirements, hard coded
  *        - Other = returns []
 */
 router.get('/getYear', async (req, res) =>{
@@ -175,12 +176,19 @@ router.get('/getYear', async (req, res) =>{
       }
       SQLQuery += " GROUP BY Student.Student_ID";
     }
-    if(SQLQuery === undefined){
+    else if(req.query.type === "4"){    // 4 means by the fixed SWE requirements
+      SQLQuery = "SELECT SUM(IF(Enrollment.Course = 'CS*1073' OR Enrollment.Course = 'CS*1083', 1, IF(Enrollment.Course = 'CS*1103' OR Enrollment.Course = 'INFO*1103' OR Enrollment.Course = 'CS*1303' OR Enrollment.Course = 'CS*2043' OR Enrollment.Course = 'ECE*2215' OR Enrollment.Course = 'ECE*2214', 10, IF(Enrollment.Course = 'CS*2263' OR Enrollment.Course = 'CS*2333' OR Enrollment.Course = 'CS*2383' OR Enrollment.Course = 'CS*2613' OR Enrollment.Course = 'CS*3503' OR Enrollment.Course = 'ECE*3232' OR Enrollment.Course = 'STAT*2593',  100, 0)))) AS 'CourseCount', SUM(Credit_Hrs) AS 'CreditHours' FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR') WHERE Student.fileID = '" + req.query.file + "'";
+      if(req.query.id !== ""){
+        SQLQuery += " AND Student.Student_ID = '" + req.query.id + "'";
+      }
+      SQLQuery += " GROUP BY Student.Student_ID";
+    }
+    else{
       res.json([]);
       return;
     }
     const resultTable = await db.sequelize.query(SQLQuery);
-    if(req.query.type === "3"){
+    if(req.query.type === "3"){         // Formatting for the by core course
       for(let i = 0; i < resultTable[0].length; i++){
         if(resultTable[0][i].Year < 13){
           resultTable[0][i].Year = 1;
@@ -193,6 +201,22 @@ router.get('/getYear', async (req, res) =>{
         }
         else{
           resultTable[0][i].Year = 4;
+        }
+      }
+    }
+    else if(req.query.type === "4"){    // Formatting for when selecting by fixed SWE courses
+      for(let i = 0; i < resultTable[0].length; i++){
+        if(resultTable[0][i].CourseCount === 752 && resultTable[0][i].CreditHours >= 116){
+          resultTable[0][i].Year = 4;
+        }
+        else if(resultTable[0][i].CourseCount%100 === 52){
+          resultTable[0][i].Year = 3;
+        }
+        else if(resultTable[0][i].CourseCount%10 === 2){
+          resultTable[0][i].Year = 2;
+        }
+        else{
+          resultTable[0][i].Year = 1;
         }
       }
     }
