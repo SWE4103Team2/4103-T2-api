@@ -1,6 +1,8 @@
 const express = require('express');
 const axios = require('axios');
 const db = require('../models/index');
+const { Op } = require("sequelize");
+
 
 let router = express.Router();
 
@@ -26,7 +28,13 @@ router.get('/getStudent', async (req, res) => {
       attributes: ['Student_ID', 'Name', 'Start_Date', 'Program'], 
       where: {
         'fileID' : req.query.file, 
-        'Student_ID' : req.query.id
+        [Op.or]: [
+          {'Student_ID' : {[Op.like]: "%" + req.query.srcVal + "%"}},
+          {'Name' : req.query.srcVal},
+          {'Start_Date' : req.query.srcVal},
+          {'Program' : req.query.srcVal}
+        ]
+        
       }
     });
     const fileList = fileTimeTable.map( row => {
