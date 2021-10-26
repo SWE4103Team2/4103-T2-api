@@ -49,16 +49,17 @@ router.get('/getStudents', async (req, res) => {
 */
 router.get('/getEnrollment', async (req, res) => {
   try {
-    const resultTable = await db.Enrollment.findAll({  
-      where: {
-        'fileID' : req.query.file,
-        'Student_ID' : req.query.id
-      }
-    });
-    const fileList = resultTable.map( row => {
-      return row.dataValues;
-    });
-    res.json(fileList);
+    // const resultTable = await db.Enrollment.findAll({  
+    //   where: {
+    //     'fileID' : req.query.file,
+    //     'Student_ID' : req.query.id
+    //   }
+    // });
+    // const fileList = resultTable.map( row => {
+    //   return row.dataValues;
+    // });
+    const fileList = await db.sequelize.query("SELECT Enrollment.*, CoreCourse.userID AS 'isCore' FROM Enrollment LEFT JOIN CoreCourse ON Enrollment.Course = CoreCourse.Course AND CoreCourse.userID = '" + req.query.userID + "' WHERE Enrollment.fileID = '" + req.query.file + "' AND Enrollment.Student_ID = '" + req.query.id + "'");
+    res.json(fileList[0]);
   } catch (err) {
     console.error(err);
   }
@@ -176,8 +177,37 @@ router.get('/getYear', async (req, res) =>{
       }
       SQLQuery += " GROUP BY Student.Student_ID";
     }
-    else if(req.query.type === "4"){    // 4 means by the fixed SWE requirements
+    else if(req.query.type === "-"){    // 4 means by the fixed SWE requirements
       SQLQuery = "SELECT SUM(IF(Enrollment.Course = 'CS*1073' OR Enrollment.Course = 'CS*1083', 1, IF(Enrollment.Course = 'CS*1103' OR Enrollment.Course = 'INFO*1103' OR Enrollment.Course = 'CS*1303' OR Enrollment.Course = 'CS*2043' OR Enrollment.Course = 'ECE*2215' OR Enrollment.Course = 'ECE*2214', 10, IF(Enrollment.Course = 'CS*2263' OR Enrollment.Course = 'CS*2333' OR Enrollment.Course = 'CS*2383' OR Enrollment.Course = 'CS*2613' OR Enrollment.Course = 'CS*3503' OR Enrollment.Course = 'ECE*3232' OR Enrollment.Course = 'STAT*2593',  100, 0)))) AS 'CourseCount', SUM(Credit_Hrs) AS 'CreditHours' FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR') WHERE Student.fileID = '" + req.query.file + "'";
+      if(req.query.id !== ""){
+        SQLQuery += " AND Student.Student_ID = '" + req.query.id + "'";
+      }
+      SQLQuery += " GROUP BY Student.Student_ID";
+    }
+    else if(req.query.type === "4"){    // 4 means by the fixed SWE requirements
+      var searchObject = JSON.parse(req.query.searchObject);
+      SQLQuery = "SELECT SUM(IF(";
+      for(let i = 0; i < searchObject.second.length; i++){
+        if(i !== 0){
+          SQLQuery += " OR ";
+        }
+        SQLQuery += "Enrollment.Course = '" + searchObject.second[i] + "'";
+      }
+      SQLQuery += ", 1, IF("
+      for(let i = 0; i < searchObject.third.length; i++){
+        if(i !== 0){
+          SQLQuery += " OR ";
+        }
+        SQLQuery += "Enrollment.Course = '" + searchObject.third[i] + "'";
+      }
+      SQLQuery += ", 10, IF("
+      for(let i = 0; i < searchObject.fourth.length; i++){
+        if(i !== 0){
+          SQLQuery += " OR ";
+        }
+        SQLQuery += "Enrollment.Course = '" + searchObject.fourth[i] + "'";
+      }
+      SQLQuery += ",  100, 0)))) AS 'CourseCount', SUM(Credit_Hrs) AS 'CreditHours' FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR') WHERE Student.fileID = '" + req.query.file + "'";
       if(req.query.id !== ""){
         SQLQuery += " AND Student.Student_ID = '" + req.query.id + "'";
       }
@@ -205,14 +235,18 @@ router.get('/getYear', async (req, res) =>{
       }
     }
     else if(req.query.type === "4"){    // Formatting for when selecting by fixed SWE courses
+      console.log(resultTable[0]);
+      let courseCount = [searchObject.minCoursePer[0], 0, 0];
+      courseCount[1] = courseCount[0]+searchObject.minCoursePer[1]*10
+      courseCount[2] = courseCount[1]+searchObject.minCoursePer[2]*100
       for(let i = 0; i < resultTable[0].length; i++){
-        if(resultTable[0][i].CourseCount === 752 && resultTable[0][i].CreditHours >= 116){
+        if(resultTable[0][i].CourseCount >= courseCount[2]){// && resultTable[0][i].CreditHours >= 116){
           resultTable[0][i].Year = 4;
         }
-        else if(resultTable[0][i].CourseCount%100 === 52){
+        else if(resultTable[0][i].CourseCount%100 >= courseCount[1]){
           resultTable[0][i].Year = 3;
         }
-        else if(resultTable[0][i].CourseCount%10 === 2){
+        else if(resultTable[0][i].CourseCount%10 >= courseCount[0]){
           resultTable[0][i].Year = 2;
         }
         else{
