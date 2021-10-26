@@ -29,10 +29,10 @@ router.get('/getStudent', async (req, res) => {
       where: {
         'fileID' : req.query.file, 
         [Op.or]: [
-          {'Student_ID' : {[Op.like]: "%" + req.query.id + "%"}},
-          {'Name' : req.query.id},
-          {'Start_Date' : req.query.id},
-          {'Program' : req.query.id}
+          {'Student_ID' : {[Op.like]: "%" + req.query.srcVal + "%"}},
+          {'Name' : req.query.srcVal},
+          {'Start_Date' : req.query.srcVal},
+          {'Program' : req.query.srcVal}
         ]
         
       }
