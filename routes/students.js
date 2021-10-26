@@ -1,7 +1,6 @@
 const express = require('express');
 const axios = require('axios');
 const db = require('../models/index');
-const e = require('express');
 const { Op } = require("sequelize");
 
 let router = express.Router();
