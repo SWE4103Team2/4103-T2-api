@@ -79,14 +79,10 @@ router.get('/getFiles', async (req, res) => {
     const resultTable = await db.FileTime.findAll({ 
       attributes: ['fileID'], 
       where,
-      order: [
-        ['uploadTime', 'DESC']
-      ]
+      order: [['uploadTime', 'DESC']],
+      raw: true
     });
-    const fileList = resultTable.map( row => {
-      return row.dataValues;
-    });
-    res.json(fileList);
+    res.json(resultTable);
   } catch (err) {
     console.error(err);
   }
@@ -104,12 +100,10 @@ router.get('/getFileTypes', async (req, res) => {
       order: [
         ['uploadTime', 'DESC']
       ],
-      group: ['program']
+      group: ['program'],
+      raw: true
     });
-    const fileList = resultTable.map( row => {
-      return row.dataValues;
-    });
-    res.json(fileList);
+    res.json(resultTable);
   } catch (err) {
     console.error(err);
   }
@@ -142,12 +136,10 @@ router.get('/uploadXLSX', async (req, res) => {
   try {
     const resultTable = await db.Enrollment.findAll({ 
       attributes: ['Course'], 
-      group: ['Course']
+      group: ['Course'],
+      raw: true
     });
-    const fileList = resultTable.map( row => {
-      return row.dataValues;
-    });
-    res.json(fileList);
+    res.json(resultTable);
   } catch (err) {
     console.error(err);
   }
