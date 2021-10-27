@@ -22,12 +22,10 @@ router.get('/getStudents', async (req, res) => {
           {'Start_Date' : req.query.srcVal},
           {'Program' : req.query.srcVal}
         ]
-      }
+      },
+      raw: true
     });
-    const fileList = resultTable.map( row => {
-      return row.dataValues;
-    });
-    res.json(fileList);
+    res.json(resultTable);
   } catch (err) {
     console.error(err);
   }
@@ -45,12 +43,10 @@ router.get('/getEnrollment', async (req, res) => {
           where: {
             'fileID' : req.query.file,
             'Student_ID' : req.query.id
-          }
+          },
+          raw: true
         });
-    const fileList = resultTable.map( row => {
-      return row.dataValues;
-    });
-    res.json(fileList);
+        res.json(resultTable);
   } catch (err) {
     console.error(err);
   }
@@ -72,12 +68,10 @@ router.get('/getFiles', async (req, res) => {
       where,
       order: [
         ['uploadTime', 'DESC']
-      ]
+      ],
+      raw: true
     });
-    const fileList = resultTable.map( row => {
-      return row.dataValues;
-    });
-    res.json(fileList);
+    res.json(resultTable);
   } catch (err) {
     console.error(err);
   }
@@ -95,12 +89,10 @@ router.get('/getFileTypes', async (req, res) => {
       order: [
         ['uploadTime', 'DESC']
       ],
-      group: ['program']
+      group: ['program'],
+      raw: true
     });
-    const fileList = resultTable.map( row => {
-      return row.dataValues;
-    });
-    res.json(fileList);
+    res.json(resultTable);
   } catch (err) {
     console.error(err);
   }
