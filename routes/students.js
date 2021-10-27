@@ -133,6 +133,26 @@ router.get('/uploadXLSX', async (req, res) => {
   }
 });
 
+/**
+ * API end point to get the list of all different courses from the enrollment table
+ * Parameters:
+ *    NONE
+ */
+ router.get('/getAllCourses', async (req, res) => {
+  try {
+    const resultTable = await db.Enrollment.findAll({ 
+      attributes: ['Course'], 
+      group: ['Course']
+    });
+    const fileList = resultTable.map( row => {
+      return row.dataValues;
+    });
+    res.json(fileList);
+  } catch (err) {
+    console.error(err);
+  }
+});
+
 /** 
  * API end point to get year of a student from the student table with a specific fileID, optional Student_ID
  * This requires an addional type variable for different calculation types
@@ -187,27 +207,42 @@ router.get('/getYear', async (req, res) =>{
     else if(req.query.type === "4"){    // 4 means by the fixed SWE requirements
       var searchObject = JSON.parse(req.query.searchObject);
       SQLQuery = "SELECT SUM(IF(";
-      for(let i = 0; i < searchObject.second.length; i++){
-        if(i !== 0){
-          SQLQuery += " OR ";
+      if(searchObject.second.length !== 0){
+        for(let i = 0; i < searchObject.second.length; i++){
+          if(i !== 0){
+            SQLQuery += " OR ";
+          }
+          SQLQuery += "Enrollment.Course = '" + searchObject.second[i] + "'";
         }
-        SQLQuery += "Enrollment.Course = '" + searchObject.second[i] + "'";
+      }
+      else{
+        SQLQuery += "FALSE";
       }
       SQLQuery += ", 1, IF("
-      for(let i = 0; i < searchObject.third.length; i++){
-        if(i !== 0){
-          SQLQuery += " OR ";
+      if(searchObject.third.length !== 0){
+        for(let i = 0; i < searchObject.third.length; i++){
+          if(i !== 0){
+            SQLQuery += " OR ";
+          }
+          SQLQuery += "Enrollment.Course = '" + searchObject.third[i] + "'";
         }
-        SQLQuery += "Enrollment.Course = '" + searchObject.third[i] + "'";
       }
-      SQLQuery += ", 10, IF("
-      for(let i = 0; i < searchObject.fourth.length; i++){
-        if(i !== 0){
-          SQLQuery += " OR ";
+      else{
+        SQLQuery += "FALSE";
+      }
+      SQLQuery += ", 100, IF("
+      if(searchObject.fourth.length !== 0){
+        for(let i = 0; i < searchObject.fourth.length; i++){
+          if(i !== 0){
+            SQLQuery += " OR ";
+          }
+          SQLQuery += "Enrollment.Course = '" + searchObject.fourth[i] + "'";
         }
-        SQLQuery += "Enrollment.Course = '" + searchObject.fourth[i] + "'";
       }
-      SQLQuery += ",  100, 0)))) AS 'CourseCount', SUM(Credit_Hrs) AS 'CreditHours' FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR') WHERE Student.fileID = '" + req.query.file + "'";
+      else{
+        SQLQuery += "FALSE";
+      }
+      SQLQuery += ",  10000, 0)))) AS 'CourseCount', SUM(Credit_Hrs) AS 'CreditHours' FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR') WHERE Student.fileID = '" + req.query.file + "'";
       if(req.query.id !== ""){
         SQLQuery += " AND Student.Student_ID = '" + req.query.id + "'";
       }
@@ -235,18 +270,17 @@ router.get('/getYear', async (req, res) =>{
       }
     }
     else if(req.query.type === "4"){    // Formatting for when selecting by fixed SWE courses
-      console.log(resultTable[0]);
       let courseCount = [searchObject.minCoursePer[0], 0, 0];
-      courseCount[1] = courseCount[0]+searchObject.minCoursePer[1]*10
-      courseCount[2] = courseCount[1]+searchObject.minCoursePer[2]*100
+      courseCount[1] = courseCount[0]+searchObject.minCoursePer[1]*100
+      courseCount[2] = courseCount[1]+searchObject.minCoursePer[2]*10000
       for(let i = 0; i < resultTable[0].length; i++){
-        if(resultTable[0][i].CourseCount >= courseCount[2]){// && resultTable[0][i].CreditHours >= 116){
+        if(resultTable[0][i].CourseCount >= courseCount[2] && resultTable[0][i].CreditHours >= searchObject.creditHoursPer[2]){
           resultTable[0][i].Year = 4;
         }
-        else if(resultTable[0][i].CourseCount%100 >= courseCount[1]){
+        else if(resultTable[0][i].CourseCount%10000 >= courseCount[1] && resultTable[0][i].CreditHours >= searchObject.creditHoursPer[1]){
           resultTable[0][i].Year = 3;
         }
-        else if(resultTable[0][i].CourseCount%10 >= courseCount[0]){
+        else if(resultTable[0][i].CourseCount%100 >= courseCount[0] && resultTable[0][i].CreditHours >= searchObject.creditHoursPer[0]){
           resultTable[0][i].Year = 2;
         }
         else{
