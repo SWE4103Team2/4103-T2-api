@@ -1,7 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 const db = require('../models/index');
-const e = require('express');
+const { Op } = require("sequelize");
 
 let router = express.Router();
 
@@ -13,17 +13,19 @@ let router = express.Router();
 */
 router.get('/getStudents', async (req, res) => {
   try {
-    // const where = {'fileID' : req.query.file};
-    // if(req.query.id !== ""){
-    //   where.Student_ID = req.query.id;
-    // }
-    // const resultTable = await db.Student.findAll({ 
-    //   where
-    // });
-    // const fileList = resultTable.map( row => {
-    //   return row.dataValues;
-    // });
-    // res.json(fileList);
+//     const resultTable = await db.Student.findAll({ 
+//       where: {
+//         'fileID' : req.query.file, 
+//         [Op.or]: [
+//           {'Student_ID' : {[Op.like]: "%" + req.query.srcVal + "%"}},
+//           {'Name' : req.query.srcVal},
+//           {'Start_Date' : req.query.srcVal},
+//           {'Program' : req.query.srcVal}
+//         ]
+//       },
+//       raw: true
+//     });
+//     res.json(resultTable);
     let SQLQuery = "SELECT Student.*, Enrollment.Student_ID AS 'EStuID' FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID WHERE Student.fileID = '" + req.query.file + "'";
     if(req.query.id !== ""){
       SQLQuery += " AND Student.Student_ID = '" + req.query.id + "'";
@@ -166,20 +168,20 @@ router.get('/getYear', async (req, res) =>{
     if(req.query.type === "0"){         // 0 means by credit hours (40h per year)
       SQLQuery = "SELECT CEILING(SUM(Credit_Hrs)/40) AS 'Year' FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR') WHERE Student.fileID = '" + req.query.file + "'";
       if(req.query.id !== ""){
-        SQLQuery += " AND Student.Student_ID = '" + req.query.id + "'";
+        SQLQuery += " AND (Student.Student_ID LIKE '%" + req.query.id + "%' OR Student.Name = '" + req.query.id + "' OR Student.Start_Date = '" + req.query.id + "' OR Student.Program = '" + req.query.id + "')";
       }
       SQLQuery += " GROUP BY Student.Student_ID";
     }
     else if(req.query.type === "1"){    // 1 means by exact start date
       SQLQuery = "SELECT CEILING(DATEDIFF(NOW(), Start_Date)/365) AS 'Year' FROM Student WHERE Student.fileID = '" + req.query.file + "'";
       if(req.query.id !== ""){
-        SQLQuery += " AND Student.Student_ID = '" + req.query.id + "'";
+        SQLQuery += " AND (Student.Student_ID LIKE '%" + req.query.id + "%' OR Student.Name = '" + req.query.id + "' OR Student.Start_Date = '" + req.query.id + "' OR Student.Program = '" + req.query.id + "')";
       }
     }
     else if(req.query.type === "2"){    // 2 means by cohort
       SQLQuery = "SELECT CEILING(DATEDIFF(NOW(), ADDDATE(Start_Date, -243))/365) AS 'Year' FROM Student WHERE Student.fileID = '" + req.query.file + "'";
       if(req.query.id !== ""){
-        SQLQuery += " AND Student.Student_ID = '" + req.query.id + "'";
+        SQLQuery += " AND (Student.Student_ID LIKE '%" + req.query.id + "%' OR Student.Name = '" + req.query.id + "' OR Student.Start_Date = '" + req.query.id + "' OR Student.Program = '" + req.query.id + "')";
       }
     }
     else if(req.query.type === "3"){    // 3 means by core Courses
