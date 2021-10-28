@@ -189,13 +189,6 @@ router.get('/getYear', async (req, res) =>{
       }
       SQLQuery += " GROUP BY Student.Student_ID";
     }
-    else if(req.query.type === "-"){    // 4 means by the fixed SWE requirements
-      SQLQuery = "SELECT SUM(IF(Enrollment.Course = 'CS*1073' OR Enrollment.Course = 'CS*1083', 1, IF(Enrollment.Course = 'CS*1103' OR Enrollment.Course = 'INFO*1103' OR Enrollment.Course = 'CS*1303' OR Enrollment.Course = 'CS*2043' OR Enrollment.Course = 'ECE*2215' OR Enrollment.Course = 'ECE*2214', 10, IF(Enrollment.Course = 'CS*2263' OR Enrollment.Course = 'CS*2333' OR Enrollment.Course = 'CS*2383' OR Enrollment.Course = 'CS*2613' OR Enrollment.Course = 'CS*3503' OR Enrollment.Course = 'ECE*3232' OR Enrollment.Course = 'STAT*2593',  100, 0)))) AS 'CourseCount', SUM(Credit_Hrs) AS 'CreditHours' FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR') WHERE Student.fileID = '" + req.query.file + "'";
-      if(req.query.id !== ""){
-        SQLQuery += " AND Student.Student_ID = '" + req.query.id + "'";
-      }
-      SQLQuery += " GROUP BY Student.Student_ID";
-    }
     else if(req.query.type === "4"){    // 4 means by the fixed SWE requirements
       var searchObject = JSON.parse(req.query.searchObject);
       SQLQuery = "SELECT SUM(IF(";
