@@ -13,6 +13,7 @@ const sequelize = new Sequelize(
 const student = require('./student');
 const enrollment = require('./enrollment');
 const fileTime = require('./fileTime');
+const CoreCourse = require('./coreCourse');
 
 const db = {};
 
@@ -22,5 +23,6 @@ db.sequelize = sequelize;
 db.Student = student(sequelize, Sequelize);
 db.Enrollment = enrollment(sequelize, Sequelize);
 db.FileTime = fileTime(sequelize, Sequelize);
+db.CoreCourse = CoreCourse(sequelize, Sequelize);
 
 module.exports = db;
