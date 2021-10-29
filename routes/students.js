@@ -147,6 +147,17 @@ router.get('/uploadXLSX', async (req, res) => {
   }
 });
 
+router.get('/deleteFile', async (req, res) => {
+  try {
+    await db.FileTime.destroy({ where: { fileID: req.query.id } });
+    await db.Student.destroy({ where: { fileID: req.query.id } });
+    await db.Enrollment.destroy({ where: { fileID: req.query.id } });
+    console.log("Deleted Files for " + req.query.id);
+  } catch (err) {
+    console.error(err);
+  }
+});
+
 /** 
  * API end point to get year of a student from the student table with a specific fileID, optional Student_ID
  * This requires an addional type variable for different calculation types
