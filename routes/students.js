@@ -27,13 +27,13 @@ router.get('/getStudents', async (req, res) => {
 //     });
 //     res.json(resultTable);
     let SQLQuery = "SELECT Student.*, Enrollment.Student_ID AS 'EStuID' FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID WHERE Student.fileID = '" + req.query.file + "'";
-    if(req.query.id !== ""){
-      SQLQuery += " AND Student.Student_ID = '" + req.query.id + "'";
+    if(req.query.studentID !== ""){
+      SQLQuery += " AND Student.Student_ID = '" + req.query.studentID + "'";
     }
     SQLQuery += " GROUP BY Student.Student_ID";
     SQLQuery += " UNION ALL SELECT Student.*, Enrollment.Student_ID AS 'EStuID' FROM Student RIGHT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID WHERE Student.Student_ID IS NULL AND Enrollment.fileID  = '" + req.query.file + "'";
-    if(req.query.id !== ""){
-      SQLQuery += " AND Enrollment.Student_ID = '" + req.query.id + "'";
+    if(req.query.studentID !== ""){
+      SQLQuery += " AND Enrollment.Student_ID = '" + req.query.studentID + "'";
     }
     SQLQuery += " GROUP BY Enrollment.Student_ID";
     const resultTable = await db.sequelize.query(SQLQuery);
@@ -47,20 +47,20 @@ router.get('/getStudents', async (req, res) => {
  * API end point to get all the columns of the Enrollment table for a specific fileID and Student_ID
  * Parameters:
  *    file = The file ID (REQUIRED)
- *    id = The Student ID (REQUIRED)  
+ *    studentID = The Student ID (REQUIRED)  
 */
 router.get('/getEnrollment', async (req, res) => {
   try {
     // const resultTable = await db.Enrollment.findAll({  
     //   where: {
     //     'fileID' : req.query.file,
-    //     'Student_ID' : req.query.id
+    //     'Student_ID' : req.query.studentID
     //   }
     // });
     // const fileList = resultTable.map( row => {
     //   return row.dataValues;
     // });
-    const fileList = await db.sequelize.query("SELECT Enrollment.*, CoreCourse.userID AS 'isCore' FROM Enrollment LEFT JOIN CoreCourse ON Enrollment.Course = CoreCourse.Course AND CoreCourse.userID = '" + req.query.userID + "' WHERE Enrollment.fileID = '" + req.query.file + "' AND Enrollment.Student_ID = '" + req.query.id + "'");
+    const fileList = await db.sequelize.query("SELECT Enrollment.*, CoreCourse.userID AS 'isCore' FROM Enrollment LEFT JOIN CoreCourse ON Enrollment.Course = CoreCourse.Course AND CoreCourse.userID = '" + req.query.userID + "' WHERE Enrollment.fileID = '" + req.query.file + "' AND Enrollment.Student_ID = '" + req.query.studentID + "'");
     res.json(fileList[0]);
   } catch (err) {
     console.error(err);
@@ -115,13 +115,13 @@ router.get('/getFileTypes', async (req, res) => {
  * Adds the core course array into the database labeled with the users ID
  * Parameters:
  *    arr = The course array
- *    id = the users ID, should be linked to their login ID, for now it can be any number
+ *    id = the users ID, should be linked to their login ID
  */
 router.get('/uploadXLSX', async (req, res) => {
   try {
     const result = {};
-    result.delete = await db.CoreCourse.destroy({where: {userID: req.query.id}})
-    result.insert = await db.CoreCourse.bulkCreate(req.query.arr.map(course => {return {userID: req.query.id, Course : course}}));
+    result.delete = await db.CoreCourse.destroy({where: {userID: req.query.userID}})
+    result.insert = await db.CoreCourse.bulkCreate(req.query.arr.map(course => {return {userID: req.query.userID, Course : course}}));
     result.insert = result.insert.length;
     res.json(result);
   } catch (err) {
@@ -149,10 +149,9 @@ router.get('/uploadXLSX', async (req, res) => {
 
 router.get('/deleteFile', async (req, res) => {
   try {
-    await db.FileTime.destroy({ where: { fileID: req.query.id } });
-    await db.Student.destroy({ where: { fileID: req.query.id } });
-    await db.Enrollment.destroy({ where: { fileID: req.query.id } });
-    console.log("Deleted Files for " + req.query.id);
+    await db.FileTime.destroy({ where: { fileID: req.query.file } });
+    await db.Student.destroy({ where: { fileID: req.query.file } });
+    await db.Enrollment.destroy({ where: { fileID: req.query.file } });
   } catch (err) {
     console.error(err);
   }
@@ -179,27 +178,27 @@ router.get('/getYear', async (req, res) =>{
     let SQLQuery;
     if(req.query.type === "0"){         // 0 means by credit hours (40h per year)
       SQLQuery = "SELECT CEILING(SUM(Credit_Hrs)/40) AS 'Year' FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR') WHERE Student.fileID = '" + req.query.file + "'";
-      if(req.query.id !== ""){
-        SQLQuery += " AND (Student.Student_ID LIKE '%" + req.query.id + "%' OR Student.Name = '" + req.query.id + "' OR Student.Start_Date = '" + req.query.id + "' OR Student.Program = '" + req.query.id + "')";
+      if(req.query.studentID !== ""){
+        SQLQuery += " AND (Student.Student_ID LIKE '%" + req.query.studentID + "%' OR Student.Name = '" + req.query.studentID + "' OR Student.Start_Date = '" + req.query.studentID + "' OR Student.Program = '" + req.query.studentID + "')";
       }
       SQLQuery += " GROUP BY Student.Student_ID";
     }
     else if(req.query.type === "1"){    // 1 means by exact start date
       SQLQuery = "SELECT CEILING(DATEDIFF(NOW(), Start_Date)/365) AS 'Year' FROM Student WHERE Student.fileID = '" + req.query.file + "'";
-      if(req.query.id !== ""){
-        SQLQuery += " AND (Student.Student_ID LIKE '%" + req.query.id + "%' OR Student.Name = '" + req.query.id + "' OR Student.Start_Date = '" + req.query.id + "' OR Student.Program = '" + req.query.id + "')";
+      if(req.query.studentID !== ""){
+        SQLQuery += " AND (Student.Student_ID LIKE '%" + req.query.studentID + "%' OR Student.Name = '" + req.query.studentID + "' OR Student.Start_Date = '" + req.query.studentID + "' OR Student.Program = '" + req.query.studentID + "')";
       }
     }
     else if(req.query.type === "2"){    // 2 means by cohort
       SQLQuery = "SELECT CEILING(DATEDIFF(NOW(), ADDDATE(Start_Date, -243))/365) AS 'Year' FROM Student WHERE Student.fileID = '" + req.query.file + "'";
-      if(req.query.id !== ""){
-        SQLQuery += " AND (Student.Student_ID LIKE '%" + req.query.id + "%' OR Student.Name = '" + req.query.id + "' OR Student.Start_Date = '" + req.query.id + "' OR Student.Program = '" + req.query.id + "')";
+      if(req.query.studentID !== ""){
+        SQLQuery += " AND (Student.Student_ID LIKE '%" + req.query.studentID + "%' OR Student.Name = '" + req.query.studentID + "' OR Student.Start_Date = '" + req.query.studentID + "' OR Student.Program = '" + req.query.studentID + "')";
       }
     }
     else if(req.query.type === "3"){    // 3 means by core Courses
       SQLQuery = "SELECT COUNT(Enrollment.Student_ID) AS 'Year' FROM CoreCourse LEFT JOIN Enrollment ON CoreCourse.Course = Enrollment.Course AND CoreCourse.userID = " + req.query.userID + " RIGHT JOIN Student ON Student.Student_ID = Enrollment.Student_ID AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR') WHERE Student.fileID = '" + req.query.file + "'";
-      if(req.query.id !== ""){
-        SQLQuery += " AND Student.Student_ID = '" + req.query.id + "'";
+      if(req.query.studentID !== ""){
+        SQLQuery += " AND Student.Student_ID = '" + req.query.studentID + "'";
       }
       SQLQuery += " GROUP BY Student.Student_ID";
     }
@@ -242,8 +241,8 @@ router.get('/getYear', async (req, res) =>{
         SQLQuery += "FALSE";
       }
       SQLQuery += ",  10000, 0)))) AS 'CourseCount', SUM(Credit_Hrs) AS 'CreditHours' FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR') WHERE Student.fileID = '" + req.query.file + "'";
-      if(req.query.id !== ""){
-        SQLQuery += " AND Student.Student_ID = '" + req.query.id + "'";
+      if(req.query.studentID !== ""){
+        SQLQuery += " AND Student.Student_ID = '" + req.query.studentID + "'";
       }
       SQLQuery += " GROUP BY Student.Student_ID";
     }
