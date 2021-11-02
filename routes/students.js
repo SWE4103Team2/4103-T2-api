@@ -165,12 +165,13 @@ router.get('/deleteFile', async (req, res) => {
  *    file = The file ID (REQUIRED)
  *    id = The Student ID (OPTIONAL, set to "" to skip)
  *    userID = The CoreCourse table ID (ONLY REQUIRED FOR type = 3)  
+ *    searchObject - contains information about the custom requirements (ONLY REQUIRED FOR type = 4)  
  *    Type = the way you wish to calculate the year
  *        - 0 = by credit hours, currently 40h repersents 1 year
  *        - 1 = by exact start date, counts the years based of the current date
  *        - 2 = by cohort, counts based of starting cohort
  *        - 3 = by core courses, counts the number of core courses done by each student for the list that is currently loaded in CoreCourse
- *        - 4 = by SWE requirements, means by the fixed SWE requirements, hard coded
+ *        - 4 = by Custom requirements, these are set in the API
  *        - Other = returns []
 */
 router.get('/getYear', async (req, res) =>{
