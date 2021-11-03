@@ -87,6 +87,9 @@ const formatTransferData = (data, fileName, program) => {
         else if(line.Title.includes("STUDIES")){
           line.Course = 'CSE*T' + count;
         }
+        else if(line.Title.includes("BLOCK")){
+          line.Course = 'BLCK*T' + count;
+        }
         else{
           line.Course = 'UNKN*T' + count;              
         }
