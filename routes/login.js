@@ -13,7 +13,7 @@ let router = express.Router();
 */
 router.get('/', async (req, res) => {
   try {
-    const SQLQuery = "SELECT userID, username FROM Login WHERE username = '" + req.query.username + "' AND pswrd = SHA1('" + req.query.password + "')";
+    const SQLQuery = "SELECT userID FROM Login WHERE username = '" + req.query.username + "' AND pswrd = SHA1('" + req.query.password + "')";
     const resultTable = await db.sequelize.query(SQLQuery);
     res.json(resultTable[0]);
   } catch (err) {
