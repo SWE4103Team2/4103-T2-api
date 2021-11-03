@@ -39,7 +39,7 @@ const formatCourseData = (data, fileName) => {
  * Formatting the transfer data file
  * Requires a bit of extra work because some fields are blank that are needed in the enrollment table
  */
-const formatTransferData = (data, fileName) => {
+const formatTransferData = (data, fileName, program) => {
   const lines = splitByNewLine(data);
   const keys = splitByTab(lines[0]);
 
@@ -51,7 +51,14 @@ const formatTransferData = (data, fileName) => {
 
   let stuID, count;                               //the current student id, used below and the number of 
 
-  transferData.forEach(line => {
+  if(program === "MULTI"){
+    program = "";
+  }
+  else{
+    program = "BS" + program;
+  }
+
+  transferDataCleaned = transferData.filter(line => {return line.Transfer_Degrees.includes(program)}).map(line => {
     line.Grade = "CR";
     line.Term = "TRANSFR";
     line.Section = "UNKWN";
@@ -65,16 +72,19 @@ const formatTransferData = (data, fileName) => {
           stuID = line.Student_ID;
           count = 0;
         }
-        if(line.Title.contains("SCIENCE")){
+        if(line.Title.includes("SCIENCE")){
           line.Course = 'SCI*T' + count;
         }
-        else if(line.Title.contains("OPEN")){
+        else if(line.Title.includes("HUM")){
+          line.Course = 'HUM*T' + count;
+        }
+        else if(line.Title.includes("OPEN")){
           line.Course = 'OPEN*T' + count;
         }
-        else if(line.Title.contains("TECHNICAL")){
+        else if(line.Title.includes("TECHNICAL")){
           line.Course = 'TE*T' + count;
         }
-        else if(line.Title.contains("STUDIES")){
+        else if(line.Title.includes("STUDIES")){
           line.Course = 'CSE*T' + count;
         }
         else{
@@ -82,8 +92,9 @@ const formatTransferData = (data, fileName) => {
         }
       }
     }
+    return line;
   });
-  return transferData;
+  return transferDataCleaned;
 };
 
 const courseIDReference = {

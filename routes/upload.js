@@ -25,7 +25,7 @@ router.post('/', async (req, res, next) => {
 
     const students = formatStudentData(studentData, fileName);
     const courses = formatCourseData(courseData, fileName);
-    const transfers = formatTransferData(transferData, fileName);
+    const transfers = formatTransferData(transferData, fileName, program);
 
     let fileResult, studentResult, courseResult, transferResult;
 
