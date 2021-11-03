@@ -35,8 +35,8 @@ router.post('/', async (req, res, next) => {
       courseResult = await Enrollment.bulkCreate(courses, { ignoreDuplicates: [true] });
       transferResult = await Enrollment.bulkCreate(transfers, { ignoreDuplicates: [true] });
     } catch (err) {
-      //console.log(err);
-
+      
+      console.log(err);
       await FileTime.destroy({ where: { fileID: fileName } });
       await Student.destroy({ where: { fileID: fileName } });
       await Enrollment.destroy({ where: { fileID: fileName } });
