@@ -102,10 +102,15 @@ router.get('/getFileTypes', async (req, res) => {
       order: [
         ['uploadTime', 'DESC']
       ],
-      group: ['program'],
       raw: true
     });
-    res.json(resultTable);
+    const grouped = [];
+    resultTable.forEach((program) => {
+      if(!grouped.some((element) => element.program === program.program)){
+        grouped.push(program);
+      }
+    });
+    res.json(grouped);
   } catch (err) {
     console.error(err);
   }
