@@ -122,12 +122,24 @@ router.get('/getFileTypes', async (req, res) => {
  *    arr = The course array
  *    id = the users ID, should be linked to their login ID
  */
-router.get('/uploadXLSX', async (req, res) => {
+ router.get('/uploadXLSX', async (req, res) => {
   try {
     const result = {};
     result.delete = await db.CoreCourse.destroy({where: {userID: req.query.userID}})
     result.insert = await db.CoreCourse.bulkCreate(req.query.arr.map(course => {return {userID: req.query.userID, Course : course}}));
     result.insert = result.insert.length;
+    res.json(result);
+  } catch (err) {
+    console.log(err);
+  }
+});
+
+/**
+ * Adds a single student, used for to add missing students
+ */
+router.get('/addSingleStudent', async (req, res) => {
+  try {
+    const result = await db.Student.create(JSON.parse(req.query.stuObject));
     res.json(result);
   } catch (err) {
     console.log(err);
