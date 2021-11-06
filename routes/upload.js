@@ -25,7 +25,7 @@ router.post('/', async (req, res, next) => {
 
     const students = formatStudentData(studentData, fileName);
     const courses = formatCourseData(courseData, fileName);
-    const transfers = formatTransferData(transferData, fileName);
+    const transfers = formatTransferData(transferData, fileName, program);
 
     let fileResult, studentResult, courseResult, transferResult;
 
@@ -33,14 +33,13 @@ router.post('/', async (req, res, next) => {
       fileResult = await FileTime.create({ fileID: fileName, uploadTime: new Date(), program });
       studentResult = await Student.bulkCreate(students, { ignoreDuplicates: [true] });
       courseResult = await Enrollment.bulkCreate(courses, { ignoreDuplicates: [true] });
-      transferResult = null // await idk
+      transferResult = await Enrollment.bulkCreate(transfers, { ignoreDuplicates: [true] });
     } catch (err) {
-      //console.log(err);
-
+      
+      console.log(err);
       await FileTime.destroy({ where: { fileID: fileName } });
       await Student.destroy({ where: { fileID: fileName } });
       await Enrollment.destroy({ where: { fileID: fileName } });
-      // await Transfer.destroy({ where: { fileID: fileName } });
 
       res.status(500).send(err);
       return;

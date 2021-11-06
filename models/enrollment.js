@@ -31,6 +31,9 @@ module.exports = (sequelize, Sequelize) => {
       }, 
       Credit_Hrs: {
         type: Sequelize.STRING(5),
+      },
+      Notes_Codes: {
+        type: Sequelize.STRING(1),
       }, 
     }, {
       freezeTableName: true,

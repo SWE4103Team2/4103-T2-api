@@ -24,7 +24,8 @@ const validateCourses = (file) => {
     "Grade", 
     "Credit_Hrs", 
     "Grade_Pts", 
-    "Section"
+    "Section",
+    "Notes_Codes"
   ];
 
   const check = header.every(val => file.includes(val));
