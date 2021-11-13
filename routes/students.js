@@ -308,4 +308,79 @@ router.get('/getYear', async (req, res) =>{
     console.error(err);
   }
 })
+
+/**
+ * API endpoint to get the count of students per entered campus
+ * Parameters:
+ *  file = The file ID
+ *  campus = campus of choice
+ */
+router.get('/getCampusCounts', async (req, res) =>{
+  try{
+    let sqlQuery;
+    sqlQuery = "SELECT COUNT(Student.Student_ID) FROM Student WHERE Student.fileID = '" + req.query.file + "' AND Student.campus = '" + req.query.campus + "'";
+    const resultTable = await db.sequelize.query(sqlQuery);
+    res.json(resultTable[0]);
+  } catch (err) {
+    console.error(err);
+  }
+});
+
+/**
+ * API endpoint to get the counts of students in courses. If course is entered, counts by entered course
+ * Parameters:
+ *  file = The file ID
+ *  course = entered course to group counts
+ */
+router.get('/getCourseCounts', async (req, res) =>{
+  try{
+    let sqlQuery;
+    sqlQuery = "SELECT COUNT(Student.Student_ID) FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID WHERE Student.fileID = '" + req.query.file + "' ";
+    if(req.query.course == ""){
+      sqlQuery += "GROUP BY Enrollment.Course"
+    }
+    else {
+      sqlQuery += "AND Enrollment.Course = '" + req.query.course +"'";
+    }
+    const resultTable = await db.sequelize.query(sqlQuery);
+    res.json(resultTable[0]);
+  } catch (err) {
+    console.error(err);
+  }
+});
+
+/**
+ * API endpoint that gets counts of ranks by entered year. If course is enter groups them by course
+ * Parameters:
+ *  file = The file ID
+ *  year = enter year 1 to 4
+ *  courseGroup = enter value to group by courses
+ */
+router.get('/getRankCounts', async (req, res) =>{
+  try{
+    let sqlQuery;
+    if(req.query.year = "1"){
+      sqlQuery = "SELECT COUNT(student.student_ID) FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR' OR Enrollment.Notes_Codes IS NOT NULL) WHERE Student.fileID = '" + req.query.file + "' AND CEILING(SUM(Credit_Hrs)/40) >= 1 AND CEILING(SUM(Credit_Hrs)/40) < 2";
+    }
+    else if(req.query.year = "2"){
+      sqlQuery = "SELECT COUNT(student.student_ID) FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR' OR Enrollment.Notes_Codes IS NOT NULL) WHERE Student.fileID = '" + req.query.file + "' AND CEILING(SUM(Credit_Hrs)/40) >= 2 AND CEILING(SUM(Credit_Hrs)/40) < 3";
+    }
+    else if(req.query.year = "3"){
+      sqlQuery = "SELECT COUNT(student.student_ID) FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR' OR Enrollment.Notes_Codes IS NOT NULL) WHERE Student.fileID = '" + req.query.file + "' AND CEILING(SUM(Credit_Hrs)/40) >= 3 AND CEILING(SUM(Credit_Hrs)/40) < 4";
+    }
+    else if(req.query.year = "4"){
+      sqlQuery = "SELECT COUNT(student.student_ID) FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR' OR Enrollment.Notes_Codes IS NOT NULL) WHERE Student.fileID = '" + req.query.file + "' AND CEILING(SUM(Credit_Hrs)/40) >= 4";
+    }
+
+    if(req.query.courseGroup !== ""){
+      sqlQuery += " GROUP BY Enrollment.Course";
+    }
+    const resultTable = await db.sequelize.query(sqlQuery);
+    res.json(resultTable[0]);
+  }catch (err) {
+    console.error(err);
+  }
+});
+
+
 module.exports = router;
