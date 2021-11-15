@@ -317,7 +317,7 @@ router.get('/getYear', async (req, res) =>{
 router.get('/getCampusCounts', async (req, res) =>{
   try{
     let sqlQuery;
-    sqlQuery = "SELECT COUNT(Student.Student_ID) FROM Student WHERE Student.fileID = '" + req.query.file + "' GROUP BY Student.campus";
+    sqlQuery = "SELECT COUNT(Student.Student_ID) AS Count FROM Student WHERE Student.fileID = '" + req.query.file + "' GROUP BY Student.campus";
     const resultTable = await db.sequelize.query(sqlQuery);
     res.json(resultTable[0]);
   } catch (err) {
@@ -333,7 +333,7 @@ router.get('/getCampusCounts', async (req, res) =>{
 router.get('/getCourseCounts', async (req, res) =>{
   try{
     let sqlQuery;
-    sqlQuery = "SELECT Enrollment.Course, COUNT(Student.Student_ID) FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID WHERE Student.fileID = '" + req.query.file + "' AND Enrollment.Course != 'null' GROUP BY Enrollment.Course";
+    sqlQuery = "SELECT Enrollment.Course, COUNT(Student.Student_ID) AS Count FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID WHERE Student.fileID = '" + req.query.file + "' AND Enrollment.Course != 'null' GROUP BY Enrollment.Course";
 
     //sqlQuery += "GROUP BY Enrollment.Course"
     
@@ -386,7 +386,7 @@ router.get('/getRankCounts', async (req, res) =>{
  */
 router.get('/getCoopCounts', async (req, res) =>{
   try{
-    let sqlQuery = "SELECT Enrollment.Course, Count(Student.student_ID) FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID WHERE Student.fileID = '" + req.query.file + "' AND Enrollment.Course LIKE '%COOP' GROUP BY SUBSTRING(Enrollment.Course, 1,2)";
+    let sqlQuery = "SELECT Enrollment.Course, Count(Student.student_ID) AS Count FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID WHERE Student.fileID = '" + req.query.file + "' AND Enrollment.Course LIKE '%COOP' GROUP BY SUBSTRING(Enrollment.Course, 1,2)";
     const resultTable = await db.sequelize.query(sqlQuery);
     
     //console.log(resultTable[0]);
