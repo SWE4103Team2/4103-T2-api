@@ -317,7 +317,7 @@ router.get('/getYear', async (req, res) =>{
 router.get('/getCampusCounts', async (req, res) =>{
   try{
     let sqlQuery;
-    sqlQuery = "SELECT COUNT(Student.Student_ID) AS Count FROM Student WHERE Student.fileID = '" + req.query.file + "' GROUP BY Student.campus";
+    sqlQuery = "SELECT Student.campus AS countName, COUNT(Student.Student_ID) AS Count FROM Student WHERE Student.fileID = '" + req.query.file + "' GROUP BY Student.campus";
     const resultTable = await db.sequelize.query(sqlQuery);
     res.json(resultTable[0]);
   } catch (err) {
@@ -373,7 +373,7 @@ router.get('/getRankCounts', async (req, res) =>{
       }
     }
     //console.log(finalTable)
-    let rankObject = [{Rank: "FIR", Count: finalTable[0]}, {Rank: "SOP", Count: finalTable[1]}, {Rank: "JUN", Count: finalTable[2]}, {Rank: "SEN", Count: finalTable[3]}];
+    let rankObject = [{countName: "FIR", Count: finalTable[0]}, {countName: "SOP", Count: finalTable[1]}, {countName: "JUN", Count: finalTable[2]}, {countName: "SEN", Count: finalTable[3]}];
 
     res.json(rankObject);
   }catch (err) {
@@ -388,7 +388,7 @@ router.get('/getRankCounts', async (req, res) =>{
  */
 router.get('/getCoopCounts', async (req, res) =>{
   try{
-    let sqlQuery = "SELECT Enrollment.Course, Count(Student.student_ID) AS Count FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID WHERE Student.fileID = '" + req.query.file + "' AND Enrollment.Course LIKE '%COOP' GROUP BY SUBSTRING(Enrollment.Course, 1,2)";
+    let sqlQuery = "SELECT Enrollment.Course AS countName, Count(Student.student_ID) AS Count FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID WHERE Student.fileID = '" + req.query.file + "' AND Enrollment.Course LIKE '%COOP' GROUP BY SUBSTRING(Enrollment.Course, 1,2)";
     const resultTable = await db.sequelize.query(sqlQuery);
     
     //console.log(resultTable[0]);
