@@ -318,7 +318,7 @@ router.get('/getYear', async (req, res) =>{
 router.get('/getCampusCounts', async (req, res) =>{
   try{
     let sqlQuery;
-    sqlQuery = "SELECT COUNT(Student.Student_ID) FROM Student WHERE Student.fileID = '" + req.query.file + "' AND Student.campus = '" + req.query.campus + "'";
+    sqlQuery = "SELECT COUNT(Student.Student_ID) FROM Student WHERE Student.fileID = '" + req.query.file + "' GROUP BY Student.campus";
     const resultTable = await db.sequelize.query(sqlQuery);
     res.json(resultTable[0]);
   } catch (err) {
@@ -335,13 +335,10 @@ router.get('/getCampusCounts', async (req, res) =>{
 router.get('/getCourseCounts', async (req, res) =>{
   try{
     let sqlQuery;
-    sqlQuery = "SELECT COUNT(Student.Student_ID) FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID WHERE Student.fileID = '" + req.query.file + "' ";
-    if(req.query.course == ""){
-      sqlQuery += "GROUP BY Enrollment.Course"
-    }
-    else {
-      sqlQuery += "AND Enrollment.Course = '" + req.query.course +"'";
-    }
+    sqlQuery = "SELECT Enrollment.Course, COUNT(Student.Student_ID) FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID WHERE Student.fileID = '" + req.query.file + "' GROUP BY Enrollment.Course";
+
+    //sqlQuery += "GROUP BY Enrollment.Course"
+    
     const resultTable = await db.sequelize.query(sqlQuery);
     res.json(resultTable[0]);
   } catch (err) {
@@ -350,37 +347,54 @@ router.get('/getCourseCounts', async (req, res) =>{
 });
 
 /**
- * API endpoint that gets counts of ranks by entered year. If course is enter groups them by course
+ * API endpoint that gets counts of ranks by year
  * Parameters:
  *  file = The file ID
- *  year = enter year 1 to 4
- *  courseGroup = enter value to group by courses
  */
 router.get('/getRankCounts', async (req, res) =>{
   try{
     let sqlQuery;
-    if(req.query.year = "1"){
-      sqlQuery = "SELECT COUNT(student.student_ID) FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR' OR Enrollment.Notes_Codes IS NOT NULL) WHERE Student.fileID = '" + req.query.file + "' AND CEILING(SUM(Credit_Hrs)/40) >= 1 AND CEILING(SUM(Credit_Hrs)/40) < 2";
-    }
-    else if(req.query.year = "2"){
-      sqlQuery = "SELECT COUNT(student.student_ID) FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR' OR Enrollment.Notes_Codes IS NOT NULL) WHERE Student.fileID = '" + req.query.file + "' AND CEILING(SUM(Credit_Hrs)/40) >= 2 AND CEILING(SUM(Credit_Hrs)/40) < 3";
-    }
-    else if(req.query.year = "3"){
-      sqlQuery = "SELECT COUNT(student.student_ID) FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR' OR Enrollment.Notes_Codes IS NOT NULL) WHERE Student.fileID = '" + req.query.file + "' AND CEILING(SUM(Credit_Hrs)/40) >= 3 AND CEILING(SUM(Credit_Hrs)/40) < 4";
-    }
-    else if(req.query.year = "4"){
-      sqlQuery = "SELECT COUNT(student.student_ID) FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR' OR Enrollment.Notes_Codes IS NOT NULL) WHERE Student.fileID = '" + req.query.file + "' AND CEILING(SUM(Credit_Hrs)/40) >= 4";
-    }
-
-    if(req.query.courseGroup !== ""){
-      sqlQuery += " GROUP BY Enrollment.Course";
-    }
+    sqlQuery = "SELECT CEILING(SUM(Credit_Hrs)/40) AS 'Year' FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR' OR Enrollment.Notes_Codes IS NOT NULL) WHERE Student.fileID = '" + req.query.file + "' GROUP BY Student.Student_ID";
+    
     const resultTable = await db.sequelize.query(sqlQuery);
-    res.json(resultTable[0]);
+    let finalTable = [0,0,0,0];
+    for(let i = 0; i < resultTable[0].length; i++){
+      if(resultTable[0][i].Year !== "null"){
+        if(resultTable[0][i].Year == "1"){
+          finalTable[0] += 1;
+        }
+        else if(resultTable[0][i].Year == "2"){
+          finalTable[1] += 1;
+        }
+        else if(resultTable[0][i].Year == "3"){
+          finalTable[2] += 1;
+        }
+        else if(resultTable[0][i].Year >= "4"){
+          finalTable[3] += 1;
+        }
+      }
+    }
+    //console.log(finalTable)
+    res.json(finalTable);
   }catch (err) {
     console.error(err);
   }
 });
 
-
+/**
+ * API endpoint that gets counts of coops
+ * Parameters:
+ *  file = The file ID
+ */
+router.get('/getCoopCounts', async (req, res) =>{
+  try{
+    let sqlQuery = "SELECT Enrollment.Course, Count(Student.student_ID) FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID WHERE Student.fileID = '" + req.query.file + "' AND Enrollment.Course LIKE '%COOP' GROUP BY SUBSTRING(Enrollment.Course, 1,2)";
+    const resultTable = await db.sequelize.query(sqlQuery);
+    
+    //console.log(resultTable[0]);
+    res.json(resultTable[0]);
+  } catch (err) {
+    console.error(err);
+  }
+})
 module.exports = router;
