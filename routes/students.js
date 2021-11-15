@@ -333,7 +333,7 @@ router.get('/getCampusCounts', async (req, res) =>{
 router.get('/getCourseCounts', async (req, res) =>{
   try{
     let sqlQuery;
-    sqlQuery = "SELECT Enrollment.Course, COUNT(Student.Student_ID) FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID WHERE Student.fileID = '" + req.query.file + "' GROUP BY Enrollment.Course";
+    sqlQuery = "SELECT Enrollment.Course, COUNT(Student.Student_ID) FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID WHERE Student.fileID = '" + req.query.file + "' AND Enrollment.Course != 'null' GROUP BY Enrollment.Course";
 
     //sqlQuery += "GROUP BY Enrollment.Course"
     
