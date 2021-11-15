@@ -373,7 +373,9 @@ router.get('/getRankCounts', async (req, res) =>{
       }
     }
     //console.log(finalTable)
-    res.json(finalTable);
+    let rankObject = [{Rank: "FIR", Count: finalTable[0]}, {Rank: "SOP", Count: finalTable[1]}, {Rank: "JUN", Count: finalTable[2]}, {Rank: "SEN", Count: finalTable[3]}];
+
+    res.json(rankObject);
   }catch (err) {
     console.error(err);
   }
