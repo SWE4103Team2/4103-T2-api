@@ -303,7 +303,33 @@ router.get('/getYear', async (req, res) =>{
         }
       }
     }
-    res.json(resultTable[0]);
+    console.log(req.query);
+    if(req.query.count === "true") {
+      let finalTable = [0,0,0,0];
+      for(let i = 0; i < resultTable[0].length; i++){
+        if(resultTable[0][i].Year !== "null"){
+          if(resultTable[0][i].Year == "1"){
+            finalTable[0] += 1;
+          }
+          else if(resultTable[0][i].Year == "2"){
+            finalTable[1] += 1;
+          }
+          else if(resultTable[0][i].Year == "3"){
+            finalTable[2] += 1;
+          }
+          else if(resultTable[0][i].Year >= "4"){
+            finalTable[3] += 1;
+          }
+        }
+      }
+      //console.log(finalTable)
+    let rankObject = [{countName: "FIR", Count: finalTable[0]}, {countName: "SOP", Count: finalTable[1]}, {countName: "JUN", Count: finalTable[2]}, {countName: "SEN", Count: finalTable[3]}];
+    res.json(rankObject);
+
+    } else {
+      res.json(resultTable[0]);
+    }
+    
   } catch (err) {
     console.error(err);
   }
@@ -388,7 +414,7 @@ router.get('/getRankCounts', async (req, res) =>{
  */
 router.get('/getCoopCounts', async (req, res) =>{
   try{
-    let sqlQuery = "SELECT Enrollment.Course AS countName, Count(Student.student_ID) AS Count FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID WHERE Student.fileID = '" + req.query.file + "' AND Enrollment.Course LIKE '%COOP' OR Enrollment.Course LIKE '%PEP' GROUP BY Enrollment.Course";
+    let sqlQuery = "SELECT Enrollment.Course AS countName, Count(DISTINCT Student.student_ID) AS Count FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID WHERE Student.fileID = '" + req.query.file + "' AND (Enrollment.Course LIKE '%COOP' OR Enrollment.Course LIKE '%PEP') GROUP BY Enrollment.Course";
     const resultTable = await db.sequelize.query(sqlQuery);
     
     //console.log(resultTable[0]);
