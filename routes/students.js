@@ -313,7 +313,6 @@ router.get('/getYear', async (req, res) =>{
  * API endpoint to get the count of students per entered campus
  * Parameters:
  *  file = The file ID
- *  campus = campus of choice
  */
 router.get('/getCampusCounts', async (req, res) =>{
   try{
@@ -330,7 +329,6 @@ router.get('/getCampusCounts', async (req, res) =>{
  * API endpoint to get the counts of students in courses. If course is entered, counts by entered course
  * Parameters:
  *  file = The file ID
- *  course = entered course to group counts
  */
 router.get('/getCourseCounts', async (req, res) =>{
   try{
