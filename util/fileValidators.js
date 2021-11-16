@@ -1,3 +1,4 @@
+// Validates Students File
 const validateStudents = (file) => {
   const header = [
     "Student_ID", 
@@ -15,6 +16,7 @@ const validateStudents = (file) => {
   }
 };
 
+// Validates Courses File
 const validateCourses = (file) => {
   const header = [
     "Student_ID", 
@@ -35,6 +37,7 @@ const validateCourses = (file) => {
   }
 };
 
+// Validates Transfers File
 const validateTransfers = (file) => {
   const header = [
     "Student_ID", 
