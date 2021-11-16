@@ -371,43 +371,6 @@ router.get('/getCourseCounts', async (req, res) =>{
 });
 
 /**
- * API endpoint that gets counts of ranks by year
- * Parameters:
- *  file = The file ID
- */
-router.get('/getRankCounts', async (req, res) =>{
-  try{
-    let sqlQuery;
-    sqlQuery = "SELECT CEILING(SUM(Credit_Hrs)/40) AS 'Year' FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR' OR Enrollment.Notes_Codes IS NOT NULL) WHERE Student.fileID = '" + req.query.file + "' GROUP BY Student.Student_ID";
-    
-    const resultTable = await db.sequelize.query(sqlQuery);
-    let finalTable = [0,0,0,0];
-    for(let i = 0; i < resultTable[0].length; i++){
-      if(resultTable[0][i].Year !== "null"){
-        if(resultTable[0][i].Year == "1"){
-          finalTable[0] += 1;
-        }
-        else if(resultTable[0][i].Year == "2"){
-          finalTable[1] += 1;
-        }
-        else if(resultTable[0][i].Year == "3"){
-          finalTable[2] += 1;
-        }
-        else if(resultTable[0][i].Year >= "4"){
-          finalTable[3] += 1;
-        }
-      }
-    }
-    //console.log(finalTable)
-    let rankObject = [{countName: "FIR", Count: finalTable[0]}, {countName: "SOP", Count: finalTable[1]}, {countName: "JUN", Count: finalTable[2]}, {countName: "SEN", Count: finalTable[3]}];
-
-    res.json(rankObject);
-  }catch (err) {
-    console.error(err);
-  }
-});
-
-/**
  * API endpoint that gets counts of coops
  * Parameters:
  *  file = The file ID
