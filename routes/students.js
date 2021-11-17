@@ -274,6 +274,84 @@ router.get('/getYear', async (req, res) =>{
       }
     }
 
+    console.log(req.query);
+    if(req.query.count === "true") {
+      let finalTable = [0,0,0,0];
+      for(let i = 0; i < resultTable[0].length; i++){
+        if(resultTable[0][i].Year !== "null"){
+          if(resultTable[0][i].Year == "1"){
+            finalTable[0] += 1;
+          }
+          else if(resultTable[0][i].Year == "2"){
+            finalTable[1] += 1;
+          }
+          else if(resultTable[0][i].Year == "3"){
+            finalTable[2] += 1;
+          }
+          else if(resultTable[0][i].Year >= "4"){
+            finalTable[3] += 1;
+          }
+        }
+      }
+      //console.log(finalTable)
+    let rankObject = [{countName: "FIR", Count: finalTable[0]}, {countName: "SOP", Count: finalTable[1]}, {countName: "JUN", Count: finalTable[2]}, {countName: "SEN", Count: finalTable[3]}];
+    res.json(rankObject);
+
+    } else {
+      res.json(resultTable[0]);
+    }
+    
+  } catch (err) {
+    console.error(err);
+  }
+})
+
+/**
+ * API endpoint to get the count of students per entered campus
+ * Parameters:
+ *  file = The file ID
+ */
+router.get('/getCampusCounts', async (req, res) =>{
+  try{
+    let sqlQuery;
+    sqlQuery = "SELECT Student.campus AS countName, COUNT(Student.Student_ID) AS Count FROM Student WHERE Student.fileID = '" + req.query.file + "' GROUP BY Student.campus";
+    const resultTable = await db.sequelize.query(sqlQuery);
+    res.json(resultTable[0]);
+  } catch (err) {
+    console.error(err);
+  }
+});
+
+/**
+ * API endpoint to get the counts of students in courses. If course is entered, counts by entered course
+ * Parameters:
+ *  file = The file ID
+ */
+router.get('/getCourseCounts', async (req, res) =>{
+  try{
+    let sqlQuery;
+    sqlQuery = "SELECT Enrollment.Course, COUNT(Student.Student_ID) AS Count FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID WHERE Student.fileID = '" + req.query.file + "' AND Enrollment.Course != 'null' AND Enrollment.Course NOT LIKE '%COOP' AND Enrollment.Course NOT LIKE '%PEP' GROUP BY Enrollment.Course";
+
+    //sqlQuery += "GROUP BY Enrollment.Course"
+    
+    const resultTable = await db.sequelize.query(sqlQuery);
+    res.json(resultTable[0]);
+  } catch (err) {
+    console.error(err);
+  }
+});
+
+/**
+ * API endpoint that gets counts of coops
+ * Parameters:
+ *  file = The file ID
+ */
+router.get('/getCoopCounts', async (req, res) =>{
+  try{
+    let sqlQuery = "SELECT Enrollment.Course AS countName, Count(DISTINCT Student.student_ID) AS Count FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID WHERE Student.fileID = '" + req.query.file + "' AND (Enrollment.Course LIKE '%COOP' OR Enrollment.Course LIKE '%PEP') GROUP BY Enrollment.Course";
+    const resultTable = await db.sequelize.query(sqlQuery);
+    
+    //console.log(resultTable[0]);
     res.json(resultTable[0]);
   } catch (err) {
     console.error(err);
