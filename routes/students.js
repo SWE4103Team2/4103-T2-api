@@ -75,6 +75,7 @@ router.get('/getFileTypes', async (req, res) => {
       raw: true
     });
 
+    const grouped = [];
     const grouped = resultTable.filter(program => !grouped.includes(program.program));
 
     res.json(grouped);
