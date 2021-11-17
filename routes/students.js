@@ -76,7 +76,11 @@ router.get('/getFileTypes', async (req, res) => {
     });
 
     const grouped = [];
-    const grouped = resultTable.filter(program => !grouped.includes(program.program));
+    resultTable.forEach(item => {
+      if (!grouped.includes(item.program)) {
+        grouped.push(item.program);
+      }
+    })
 
     res.json(grouped);
   } catch (err) {
