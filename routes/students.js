@@ -2,7 +2,6 @@ const express = require('express');
 let router = express.Router();
 
 const { sequelize, Student, Enrollment, FileTime, CoreCourse } = require('../models');
-const { Op } = require("sequelize");
 
 /**************************************************************
 Retrieve a list of Students.
@@ -162,8 +161,7 @@ router.get('/deleteFile', async (req, res) => {
 Extracts Students Year based on Type Selection.
 Parameters:
 -> file         : The File ID (REQUIRED).
--> id           : Student's ID (OPTIONAL).
--> userID       : Core Courses Table ID (REQuIRED IF Type = 3).
+-> userID       : Core Courses Table ID (REQUIRED IF Type = 3).
 -> searchObject : Custom Search Requirements (REQUIRED IF Type = 4).
 -> Type         : Determines how 'Year' is Calculated
                   - 0: By Credit Hour (40ch = 1yr).
@@ -178,30 +176,16 @@ router.get('/getYear', async (req, res) =>{
     let SQLQuery;
     
     if(req.query.type === "0") {         // 0 means by credit hours (40h per year)
-      SQLQuery = "SELECT CEILING(SUM(Credit_Hrs)/40) AS 'Year' FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR' OR Enrollment.Notes_Codes IS NOT NULL) WHERE Student.fileID = '" + req.query.file + "'";
-      if(req.query.studentID !== "") {
-        SQLQuery += " AND (Student.Student_ID LIKE '%" + req.query.studentID + "%' OR Student.Name = '" + req.query.studentID + "' OR Student.Start_Date = '" + req.query.studentID + "' OR Student.Program = '" + req.query.studentID + "')";
-      }
-      SQLQuery += " GROUP BY Student.Student_ID";
+      SQLQuery = "SELECT CEILING(SUM(Credit_Hrs)/40) AS 'Year' FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR' OR Enrollment.Notes_Codes IS NOT NULL) WHERE Student.fileID = '" + req.query.file + "' GROUP BY Student.Student_ID";
     }
     else if(req.query.type === "1") {    // 1 means by exact start date
       SQLQuery = "SELECT CEILING(DATEDIFF(NOW(), Start_Date)/365) AS 'Year' FROM Student WHERE Student.fileID = '" + req.query.file + "'";
-      if(req.query.studentID !== "") {
-        SQLQuery += " AND (Student.Student_ID LIKE '%" + req.query.studentID + "%' OR Student.Name = '" + req.query.studentID + "' OR Student.Start_Date = '" + req.query.studentID + "' OR Student.Program = '" + req.query.studentID + "')";
-      }
     }
     else if(req.query.type === "2") {    // 2 means by cohort
       SQLQuery = "SELECT CEILING(DATEDIFF(NOW(), ADDDATE(Start_Date, -243))/365) AS 'Year' FROM Student WHERE Student.fileID = '" + req.query.file + "'";
-      if(req.query.studentID !== "") {
-        SQLQuery += " AND (Student.Student_ID LIKE '%" + req.query.studentID + "%' OR Student.Name = '" + req.query.studentID + "' OR Student.Start_Date = '" + req.query.studentID + "' OR Student.Program = '" + req.query.studentID + "')";
-      }
     }
     else if(req.query.type === "3") {    // 3 means by core Courses
-      SQLQuery = "SELECT COUNT(Enrollment.Student_ID) AS 'Year' FROM CoreCourse LEFT JOIN Enrollment ON CoreCourse.Course = Enrollment.Course AND CoreCourse.userID = " + req.query.userID + " RIGHT JOIN Student ON Student.Student_ID = Enrollment.Student_ID AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR' OR Enrollment.Notes_Codes IS NOT NULL) WHERE Student.fileID = '" + req.query.file + "'";
-      if(req.query.studentID !== "") {
-        SQLQuery += " AND Student.Student_ID = '" + req.query.studentID + "'";
-      }
-      SQLQuery += " GROUP BY Student.Student_ID";
+      SQLQuery = "SELECT COUNT(Enrollment.Student_ID) AS 'Year' FROM CoreCourse LEFT JOIN Enrollment ON CoreCourse.Course = Enrollment.Course AND CoreCourse.userID = " + req.query.userID + " RIGHT JOIN Student ON Student.Student_ID = Enrollment.Student_ID AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR' OR Enrollment.Notes_Codes IS NOT NULL) WHERE Student.fileID = '" + req.query.file + "' GROUP BY Student.Student_ID";
     }
     else if(req.query.type === "4") {    // 4 means by the fixed SWE requirements
       var searchObject = JSON.parse(req.query.searchObject);
@@ -245,11 +229,7 @@ router.get('/getYear', async (req, res) =>{
         SQLQuery += "FALSE";
       }
 
-      SQLQuery += ",  10000, 0)))) AS 'CourseCount', SUM(Credit_Hrs) AS 'CreditHours' FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR' OR Enrollment.Notes_Codes IS NOT NULL) WHERE Student.fileID = '" + req.query.file + "'";
-      if(req.query.studentID !== "") {
-        SQLQuery += " AND Student.Student_ID = '" + req.query.studentID + "'";
-      }
-      SQLQuery += " GROUP BY Student.Student_ID";
+      SQLQuery += ",  10000, 0)))) AS 'CourseCount', SUM(Credit_Hrs) AS 'CreditHours' FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR' OR Enrollment.Notes_Codes IS NOT NULL) WHERE Student.fileID = '" + req.query.file + "' GROUP BY Student.Student_ID";
     }
     else {
       res.json([]);
