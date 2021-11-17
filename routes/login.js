@@ -1,9 +1,8 @@
 const express = require('express');
-const axios = require('axios');
-const db = require('../models/index');
-const { Op } = require("sequelize");
-
 let router = express.Router();
+
+const { sequelize } = require('../models');
+
 
 /** 
  * API end point to get all the students in the student table and all those enrolled but not in the student table with a specific fileID, optional Student_ID
@@ -13,11 +12,13 @@ let router = express.Router();
 */
 router.get('/', async (req, res) => {
   try {
-    const SQLQuery = "SELECT userID FROM Login WHERE username = '" + req.query.username + "' AND pswrd = SHA1('" + req.query.password + "')";
-    const resultTable = await db.sequelize.query(SQLQuery);
+    const SQLQuery = `SELECT userID FROM Login WHERE username = '${req.query.username}' AND pswrd = SHA1('${req.query.password}')`;
+    const resultTable = await sequelize.query(SQLQuery);
+
     res.json(resultTable[0]);
   } catch (err) {
     console.error(err);
+    res.status(500).send(err);
   }
 });
 

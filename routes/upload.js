@@ -6,7 +6,7 @@ const { formatStudentData, formatCourseData, formatTransferData } = require('../
 const { Student, Enrollment, FileTime } = require('../models');
 
 // Handles File Uploads
-router.post('/', async (req, res, next) => {
+router.post('/', async (req, res) => {
   try {
     const { fileName, program } = req.query;
     const studentData = readFile(req.files[0]);
@@ -48,7 +48,6 @@ router.post('/', async (req, res, next) => {
     res.send({ fileResult, studentResult, courseResult, transferResult });
   } catch (err) {
     console.log(err);
-
     res.status(500).send(err);
   }
 });
