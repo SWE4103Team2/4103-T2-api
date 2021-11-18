@@ -284,7 +284,7 @@ router.get('/getYear', async (req, res) =>{
       let finalTable = [0,0,0,0];
       for(let i = 0; i < resultTable[0].length; i++){
         if(resultTable[0][i].Year !== "null"){
-          if(resultTable[0][i].Year == "1"){
+          if(resultTable[0][i].Year <= "1"){
             finalTable[0] += 1;
           }
           else if(resultTable[0][i].Year == "2"){
