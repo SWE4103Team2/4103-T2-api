@@ -1,4 +1,4 @@
-const Sequelize, { Op } = require('sequelize');
+const Sequelize = require('sequelize');
 
 // Define Our Database
 const sequelize = new Sequelize(
@@ -23,7 +23,7 @@ const db = {};
 // Add Sequelize to db object
 db.Sequelize = Sequelize;
 db.sequelize = sequelize;
-db.Op = Op;
+db.Op = Sequelize.Op;
 
 // Add Models to db object
 db.Student = student(sequelize, Sequelize);
