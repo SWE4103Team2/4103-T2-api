@@ -2,7 +2,7 @@ const express = require('express');
 let router = express.Router();
 
 const { sequelize, Student, Enrollment, FileTime, CoreCourse } = require('../models');
-
+const db = require('../models/index');
 /**************************************************************
 Retrieve a list of Students.
 Parameters:
@@ -279,7 +279,7 @@ router.get('/getYear', async (req, res) =>{
       }
     }
 
-    console.log(req.query);
+    //console.log(req.query);
     if(req.query.count === "true") {
       let finalTable = [0,0,0,0];
       for(let i = 0; i < resultTable[0].length; i++){
