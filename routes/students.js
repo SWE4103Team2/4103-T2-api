@@ -113,23 +113,23 @@ Parameters:
     }
     if(data["valid-tags"]){
       result.delete += await db.CourseTypes.destroy({ where: { userID: req.query.userID, isException: 0 }});
-      result.insert += (await db.CourseTypes.bulkCreate(data["valid-tags"])).length;
+      result.insert += (await db.CourseTypes.bulkCreate(data["valid-tags"]), {ignoreDuplicates: [true]}).length;
     }
     if(data["exceptions"]){
       result.delete += await db.CourseTypes.destroy({ where: { userID: req.query.userID, isException: 1 }});
-      result.insert += (await db.CourseTypes.bulkCreate(data["exceptions"])).length;
+      result.insert += (await db.CourseTypes.bulkCreate(data["exceptions"], {ignoreDuplicates: [true]})).length;
     }
     if(data["replacements"]){
       result.delete += await db.CourseReplacements.destroy({ where: { userID: req.query.userID }});
-      result.insert += (await db.CourseReplacements.bulkCreate(data["replacements"])).length;
+      result.insert += (await db.CourseReplacements.bulkCreate(data["replacements"], {ignoreDuplicates: [true]})).length;
     }
     if(data["course-groups"]){
       result.delete += await db.CourseGroups.destroy({ where: { userID: req.query.userID }});
-      result.insert += (await db.CourseGroups.bulkCreate(data["course-groups"])).length;
+      result.insert += (await db.CourseGroups.bulkCreate(data["course-groups"], {ignoreDuplicates: [true]})).length;
     }
     if(data["matrixes"]){
       result.delete += await CoreCourse.destroy({ where: { userID: req.query.userID }});
-      result.insert += (await CoreCourse.bulkCreate(data["matrixes"])).length;
+      result.insert += (await CoreCourse.bulkCreate(data["matrixes"], {ignoreDuplicates: [true]})).length;
     }
     
 

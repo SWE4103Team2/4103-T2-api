@@ -11,7 +11,7 @@ module.exports = (sequelize, Sequelize) => {
         allowNull: false
       },
       Group: {
-        type: Sequelize.STRING(9),
+        type: Sequelize.STRING(15),
         primaryKey: true,
         allowNull: false
       },
