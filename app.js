@@ -19,9 +19,11 @@ db.sequelize.sync();
 // Gets Routes
 const upload = require('./routes/upload.js');
 const students = require('./routes/students.js');
+const login = require('./routes/login.js');
 
 app.use('/upload', upload);
 app.use('/students', students);
+app.use('/login', login);
 
 // Sets up the port
 const port = process.env.PORT || 3001;
