@@ -33,7 +33,9 @@ Parameters:
 **************************************************************/
 router.get('/getEnrollment', async (req, res) => {
   try {
-    const fileList = await sequelize.query("SELECT Enrollment.*, CoreCourse.userID AS 'isCore' FROM Enrollment LEFT JOIN CoreCourse ON Enrollment.Course = CoreCourse.Course AND CoreCourse.userID = '" + req.query.userID + "' WHERE Enrollment.fileID = '" + req.query.file + "' AND Enrollment.Student_ID = '" + req.query.studentID + "'");
+    const sheetName = req.query.cohort.substring(0, 7);
+    console.log(sheetName);
+    const fileList = await sequelize.query("SELECT Enrollment.*, CoreCourse.userID AS 'isCore' FROM Enrollment LEFT JOIN CoreCourse ON Enrollment.Course = CoreCourse.Course AND CoreCourse.userID = '" + req.query.userID + "' AND CoreCourse.sheetName = '" + sheetName + "' WHERE Enrollment.fileID = '" + req.query.file + "' AND Enrollment.Student_ID = '" + req.query.studentID + "'");
     res.json(fileList[0]);
   } catch (err) {
     console.error(err);
