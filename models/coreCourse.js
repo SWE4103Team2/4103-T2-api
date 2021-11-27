@@ -17,6 +17,7 @@ module.exports = (sequelize, Sequelize) => {
       },
       sheetName: {
         type: Sequelize.STRING(50),
+        primaryKey: true,
         allowNull: false
       },
     }, {
