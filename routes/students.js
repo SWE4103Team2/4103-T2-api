@@ -325,7 +325,7 @@ router.get('/getYear', async (req, res) =>{
             finalTable[3] += 1;
           }
         }
-      }
+      }   
       //console.log(finalTable)
     let rankObject = [{countName: "FIR", Count: finalTable[0]}, {countName: "SOP", Count: finalTable[1]}, {countName: "JUN", Count: finalTable[2]}, {countName: "SEN", Count: finalTable[3]}];
     res.json(rankObject);
@@ -390,5 +390,77 @@ router.get('/getCoopCounts', async (req, res) =>{
     console.error(err);
     res.status(500).send(err);
   }
-})
+});
+
+/**
+ * API endpoint that gets the core courses 
+ * Parameters:
+ *  userID = login id
+ *  sheetName = year range (Ex. 2020-21)
+ */
+router.get('/getCoreCourses', async (req, res) => {
+  try{
+    let sqlQuery = "SELECT corecourse.Course, corecourse.columnID FROM corecourse WHERE userID = '" + req.query.userID + "' AND sheetName = '" + req.query.sheetName + "';";
+    const resultTable = await sequelize.query(sqlQuery);
+    
+    res.json(resultTable);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send(err);
+  }
+});
+
+/**
+ * API endpoint that gets the course prerequisites
+ * Parameters:
+ *  userID = login id
+ */
+ router.get('/getCoursePreReqs', async (req, res) => {
+  try{
+    let sqlQuery = "SELECT courseprereqs.Course, courseprereqs.PrereqFor, courseprereqs.isCoreq FROM courseprereqs WHERE userID = '" + req.query.userID + "';";
+    const resultTable = await sequelize.query(sqlQuery);
+    
+    res.json(resultTable);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send(err);
+  }
+});
+
+/**
+ * API endpoint that gets the course replacements
+ * Parameters:
+ *  userID = login id
+ */
+ router.get('/getCourseReplacements', async (req, res) => {
+  try{
+    let sqlQuery = "SELECT coursereplacements.Course, coursereplacements.Replaces FROM coursereplacements WHERE userID = '" + req.query.userID + "';";
+    const resultTable = await sequelize.query(sqlQuery);
+    
+    console.log(resultTable);
+    res.json(resultTable);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send(err);
+  }
+});
+
+/**
+ * API endpoint that gets the course types
+ * Parameters:
+ *  userID = login id
+ */
+ router.get('/getCourseTypes', async (req, res) => {
+  try{
+    let sqlQuery = "SELECT coursetypes.Course, coursetypes.Type, coursetypes.isSubject, coursetypes.isException FROM coursetypes WHERE userID = '" + req.query.userID + "';";
+    const resultTable = await sequelize.query(sqlQuery);
+    
+    console.log(resultTable);
+    res.json(resultTable);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send(err);
+  }
+});
+
 module.exports = router;
