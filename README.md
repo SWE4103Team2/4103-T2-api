@@ -24,5 +24,5 @@ Then Run:
 
 ### .env
 DB_NAME=SWE4103T2
-DB_USERNAME=admin
-DB_PASSWORD=PQzU$5vchmev!T2d%w8yCGosfqg%q#!9hcLN%c
+DB_USERNAME=SWEadmin@swe4103t2bruh
+DB_PASSWORD=S1KvThu59KldwHvR5i3v
