@@ -34,7 +34,6 @@ Parameters:
 router.get('/getEnrollment', async (req, res) => {
   try {
     const sheetName = req.query.cohort.substring(0, 7);
-    console.log(sheetName);
     const fileList = await sequelize.query("SELECT Enrollment.*, CoreCourse.userID AS 'isCore' FROM Enrollment LEFT JOIN CoreCourse ON Enrollment.Course = CoreCourse.Course AND CoreCourse.userID = '" + req.query.userID + "' AND CoreCourse.sheetName = '" + sheetName + "' WHERE Enrollment.fileID = '" + req.query.file + "' AND Enrollment.Student_ID = '" + req.query.studentID + "'");
     res.json(fileList[0]);
   } catch (err) {
@@ -102,6 +101,7 @@ Parameters:
  router.post('/uploadXLSX', async (req, res) => {
   try {
     const result = {'delete' : 0, 'insert' : 0};
+    let ret = 0;
     const data = JSON.parse(req.body.BRUH);
     Object.keys(data).forEach(sheet => {
       data[sheet].forEach(row => {
@@ -110,28 +110,40 @@ Parameters:
     })
     
     if(data["prereqs"]){
-      result.delete += await db.CoursePrereqs.destroy({ where: { userID: req.query.userID }});
-      result.insert += (await db.CoursePrereqs.bulkCreate(data["prereqs"])).length;
+      ret = await db.CoursePrereqs.destroy({ where: { userID: req.query.userID }});
+      result.delete += ret ? ret : 0;
+      ret = (await db.CoursePrereqs.bulkCreate(data["prereqs"])).length;
+      result.insert += ret ? ret : 0;
     }
     if(data["valid-tags"]){
-      result.delete += await db.CourseTypes.destroy({ where: { userID: req.query.userID, isException: 0 }});
-      result.insert += (await db.CourseTypes.bulkCreate(data["valid-tags"]), {ignoreDuplicates: [true]}).length;
+      ret = await db.CourseTypes.destroy({ where: { userID: req.query.userID, isException: 0 }});
+      result.delete += ret ? ret : 0;
+      ret = (await db.CourseTypes.bulkCreate(data["valid-tags"]), {ignoreDuplicates: [true]}).length;
+      result.insert += ret ? ret : 0;
     }
     if(data["exceptions"]){
-      result.delete += await db.CourseTypes.destroy({ where: { userID: req.query.userID, isException: 1 }});
-      result.insert += (await db.CourseTypes.bulkCreate(data["exceptions"], {ignoreDuplicates: [true]})).length;
+      ret = await db.CourseTypes.destroy({ where: { userID: req.query.userID, isException: 1 }});
+      result.delete += ret ? ret : 0;
+      ret = (await db.CourseTypes.bulkCreate(data["exceptions"], {ignoreDuplicates: [true]})).length;
+      result.insert += ret ? ret : 0;
     }
     if(data["replacements"]){
-      result.delete += await db.CourseReplacements.destroy({ where: { userID: req.query.userID }});
-      result.insert += (await db.CourseReplacements.bulkCreate(data["replacements"], {ignoreDuplicates: [true]})).length;
+      ret = await db.CourseReplacements.destroy({ where: { userID: req.query.userID }});
+      result.delete += ret ? ret : 0;
+      ret = (await db.CourseReplacements.bulkCreate(data["replacements"], {ignoreDuplicates: [true]})).length;
+      result.insert += ret ? ret : 0;
     }
     if(data["course-groups"]){
-      result.delete += await db.CourseGroups.destroy({ where: { userID: req.query.userID }});
-      result.insert += (await db.CourseGroups.bulkCreate(data["course-groups"], {ignoreDuplicates: [true]})).length;
+      ret = await db.CourseGroups.destroy({ where: { userID: req.query.userID }});
+      result.delete += ret ? ret : 0;
+      ret = (await db.CourseGroups.bulkCreate(data["course-groups"], {ignoreDuplicates: [true]})).length;
+      result.insert += ret ? ret : 0;
     }
     if(data["matrixes"]){
-      result.delete += await CoreCourse.destroy({ where: { userID: req.query.userID }});
-      result.insert += (await CoreCourse.bulkCreate(data["matrixes"], {ignoreDuplicates: [true]})).length;
+      ret = await CoreCourse.destroy({ where: { userID: req.query.userID }});
+      result.delete += ret ? ret : 0;
+      ret = (await CoreCourse.bulkCreate(data["matrixes"], {ignoreDuplicates: [true]})).length;
+      result.insert += ret ? ret : 0;
     }
     
 
