@@ -437,7 +437,6 @@ router.get('/getCoreCourses', async (req, res) => {
     let sqlQuery = "SELECT coursereplacements.Course, coursereplacements.Replaces FROM coursereplacements WHERE userID = '" + req.query.userID + "';";
     const resultTable = await sequelize.query(sqlQuery);
     
-    console.log(resultTable);
     res.json(resultTable);
   } catch (err) {
     console.error(err);
@@ -455,6 +454,77 @@ router.get('/getCoreCourses', async (req, res) => {
     let sqlQuery = "SELECT coursetypes.Course, coursetypes.Type, coursetypes.isSubject, coursetypes.isException FROM coursetypes WHERE userID = '" + req.query.userID + "';";
     const resultTable = await sequelize.query(sqlQuery);
     
+    res.json(resultTable);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send(err);
+  }
+});
+
+/**
+ * API endpoint that gets a list of completed, in progress, and required for Core, TE, NS, etc. courses 
+ * Parameters:
+ *  userID = login id
+ *  sheetName = year range (Ex. 2020-21)
+ *  studentID = the id of the student
+ */
+router.get('/getCompleteAudit', async (req, res) => {
+  try{
+    let sqlQuery = "SELECT enrollment.Course, corecourse.columnID, coursetypes.Type, enrollment.Grade, 1 AS 'Taken', coursetypes.isException FROM enrollment LEFT JOIN corecourse ON enrollment.Course = corecourse.Course AND corecourse.sheetName = '" + req.query.sheetName + "' AND corecourse.userID = '" + req.query.userID + "' LEFT JOIN coursetypes";
+    sqlQuery += " ON enrollment.Course LIKE CONCAT(coursetypes.Course, '%') AND coursetypes.userID = '" + req.query.userID + "' WHERE enrollment.Student_ID = " + req.query.studentID + " AND (Enrollment.Grade IS NULL OR NOT (Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR' OR Enrollment.Notes_Codes IS NOT NULL))"
+    sqlQuery += " UNION ALL SELECT corecourse.Course, corecourse.columnID, NULL, NULL, 0, NULL FROM enrollment RIGHT JOIN corecourse ON enrollment.Course = corecourse.Course AND enrollment.Student_ID = " + req.query.studentID + " WHERE corecourse.sheetName = '" + req.query.sheetName + "' AND corecourse.userID = '" + req.query.userID + "' AND enrollment.Course IS NULL;";
+    const resultTable = await sequelize.query(sqlQuery);
+    
+    const formattedAudit = {Core: {completed: [], progress: [], required: []},
+                            TE: {completed: [], progress: [], required: []},
+                            NS: {completed: [], progress: [], required: []},
+                            CSE: {completed: [], progress: [], required: []}
+    };
+
+    resultTable.forEach((course) => {
+      if(course.columnID != null) {
+        if(course.Grade != null) {
+          formattedAudit.Core.completed.push(course);
+          resultTable[course] = '';
+        } else {
+          formattedAudit.Core.progress.push(course);
+          resultTable[course] = '';
+        }
+        if(course.Taken == 0){
+          formattedAudit.Core.required.push(course);
+          resultTable[course] = '';
+        }
+      }
+      switch(course.Type){
+        case "TE":
+          if(course.Grade != null) {
+            formattedAudit.TE.completed.push(course);
+            resultTable[course] = '';
+          } else {
+            formattedAudit.TE.progress.push(course);
+            resultTable[course] = '';
+          }
+          break;
+        case "NS":
+          if(course.Grade != null) {
+            formattedAudit.NS.completed.push(course);
+            resultTable[course] = '';
+          } else {
+            formattedAudit.NS.progress.push(course);
+            resultTable[course] = '';
+          }
+          break;
+        default:
+          if(course.Grade != null) {
+            formattedAudit.CSE.completed.push(course);
+            resultTable[course] = '';
+          } else {
+            formattedAudit.CSE.progress.push(course);
+            resultTable[course] = '';
+          }
+      }
+    });
+
     console.log(resultTable);
     res.json(resultTable);
   } catch (err) {
