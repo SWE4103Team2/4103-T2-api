@@ -467,6 +467,7 @@ router.get('/getCoreCourses', async (req, res) => {
  *  userId = login id
  *  year = year range (Ex. 2020-21)
  *  studentId = the id of the student
+ *  fileId = the fileId
  */
 router.get('/getCompleteAudit', async (req, res) => {
   try{
@@ -510,7 +511,7 @@ router.get('/getCompleteAudit', async (req, res) => {
                     ON 
                         enrollment.Course = CoreReplacements.Course AND 
                         CoreReplacements.sheetName = '${req.query.year}' AND 
-                        CoreReplacements.userID = ${req.query.userId} 
+                        CoreReplacements.userID = ${req.query.userId} AND
                     LEFT JOIN 
                         coursetypes 
                     ON 
@@ -518,6 +519,7 @@ router.get('/getCompleteAudit', async (req, res) => {
                         coursetypes.userID = ${req.query.userId} 
                     WHERE 
                         enrollment.Student_ID = ${req.query.studentId} AND 
+                        enrollment.fileId = '${req.query.fileId}' AND
                         (Enrollment.Grade IS NULL OR 
                             NOT (Enrollment.Grade = 'W' OR 
                                 Enrollment.Grade = 'WF' OR 
@@ -543,7 +545,8 @@ router.get('/getCompleteAudit', async (req, res) => {
                         corecourse 
                     ON 
                         enrollment.Course = corecourse.Course AND 
-                        enrollment.Student_ID = ${req.query.studentId} 
+                        enrollment.Student_ID = ${req.query.studentId} AND
+                        enrollment.fileId = '${req.query.fileId}' 
                     WHERE 
                         corecourse.sheetName = '${req.query.year}' AND 
                         corecourse.userID = ${req.query.userId} AND 
