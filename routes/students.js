@@ -494,12 +494,13 @@ GROUP BY
                     `;            
         
     const resultTable = await sequelize.query(sqlQuery);
-
-    // needed format to send to the UI 
-    const formattedAudit = {core: {ccr: 0, cr: 0, completed: [], progress: [], required: []},
-                            te: {ccr: 0, completed: [], progress: []},
-                            ns: {ccr: 0, completed: [], progress: []},
-                            cse: {ccr: 0, completed: [], progress: []}
+    
+    // necessary format to give to the UI
+    const formattedAudit = {
+      core: {ccr: 0, cr: 0, completed: [], progress: [], required: [] },
+      te:   {ccr: 0, completed: [], progress: [] },
+      ns:   {ccr: 0, completed: [], progress: [] },
+      cse:  {ccr: 0, completed: [], progress: [] }
     };
     
     // storing the course that are being replaced
@@ -535,7 +536,7 @@ GROUP BY
                 courseReplaces.push({name: course.replaces, crdhrs: course.Credit_Hrs});
                 formattedAudit.core.progress.push(`${course.replaces} **(${course.Course})`);
               } else {
-              formattedAudit.core.progress.push(course.Course);
+                formattedAudit.core.progress.push(course.Course);
               }
             }
           }
