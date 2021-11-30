@@ -492,10 +492,11 @@ WHERE
 
     // console.log(resultTable);
     
-    const formattedAudit = {core: {ccr: 0, cr: 0, completed: [], progress: [], required: []},
-                            te: {ccr: 0, completed: [], progress: []},
-                            ns: {ccr: 0, completed: [], progress: []},
-                            cse: {ccr: 0, completed: [], progress: []}
+    const formattedAudit = {
+      core: {ccr: 0, cr: 0, completed: [], progress: [], required: [] },
+      te:   {ccr: 0, completed: [], progress: [] },
+      ns:   {ccr: 0, completed: [], progress: [] },
+      cse:  {ccr: 0, completed: [], progress: [] }
     };
     
     const courseReplaces = [];
@@ -518,7 +519,7 @@ WHERE
             if(course.replaces) {
               formattedAudit.core.progress.push(`${course.replaces} **(${course.Course})`);
             } else {
-            formattedAudit.core.progress.push(course);
+            formattedAudit.core.progress.push(course.Course);
             }
           }
         }
