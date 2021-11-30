@@ -17,10 +17,10 @@ const student = require('./student');
 const enrollment = require('./enrollment');
 const fileTime = require('./fileTime');
 const CoreCourse = require('./coreCourse');
-const CourseGroups = require('./CourseGroups');
-const CoursePrereqs = require('./CoursePrereqs');
-const CourseReplacements = require('./CourseReplacements');
-const CourseTypes = require('./CourseTypes');
+const CourseGroups = require('./courseGroups');
+const CoursePrereqs = require('./coursePrereqs');
+const CourseReplacements = require('./courseReplacements');
+const CourseTypes = require('./courseTypes');
 
 const db = {};
 
