@@ -404,93 +404,93 @@ router.get('/getCompleteAudit', async (req, res) => {
   try{
     // SQLQuery that returns all the information needed for the audit. 
     let sqlQuery = `SELECT 
-    enrollment.Course, 
-    CoreReplacements.columnID, 
-    coursetypes.Type, 
-    enrollment.Grade, 
-    1 AS 'Taken', 
-    coursetypes.isException,
-    CoreReplacements.replaces,
-    enrollment.Credit_Hrs
-FROM 
-    enrollment 
-LEFT JOIN 
-    (SELECT 
-        *,
-        NULL AS "replaces"
-    FROM 
-        corecourse 
-    WHERE 
-        corecourse.userID = ${req.query.userId} AND 
-        corecourse.sheetName = '${req.query.year}' 
-    UNION 
-    SELECT 
-        corecourse.userID, 
-        coursereplacements.Replaces, 
-        corecourse.columnID, 
-        corecourse.sheetName,
-        corecourse.Course
-    FROM 
-        corecourse 
-    INNER JOIN 
-        coursereplacements 
-    ON 
-        corecourse.Course = coursereplacements.Course AND 
-        corecourse.userID = coursereplacements.userID 
-    WHERE 
-        corecourse.userID = ${req.query.userId} AND 
-        corecourse.sheetName = '${req.query.year}' 
-    ) CoreReplacements 
-ON 
-    enrollment.Course = CoreReplacements.Course AND 
-    CoreReplacements.sheetName = '${req.query.year}' AND 
-    CoreReplacements.userID = ${req.query.userId} 
-LEFT JOIN 
-    coursetypes 
-ON 
-    enrollment.Course LIKE CONCAT(coursetypes.Course, '%') AND 
-    coursetypes.userID = ${req.query.userId} 
-WHERE 
-    enrollment.Student_ID = ${req.query.studentId} AND 
-    enrollment.fileID = '${req.query.fileId}' AND
-    (Enrollment.Grade IS NULL OR 
-        NOT (Enrollment.Grade = 'W' OR 
-            Enrollment.Grade = 'WF' OR 
-            Enrollment.Grade = 'WD' OR 
-            Enrollment.Grade = 'D' OR 
-            Enrollment.Grade = 'F' OR 
-            Enrollment.Grade = 'NCR' OR 
-            Enrollment.Notes_Codes IS NOT NULL
-            )
-    ) 
-UNION ALL 
-SELECT 
-    corecourse.Course, 
-    corecourse.columnID, 
-    NULL, 
-    NULL, 
-    0, 
-    NULL,
-    NULL,
-    credHrsEnrollment.Credit_Hrs   
-FROM 
-    enrollment 
-RIGHT JOIN 
-    corecourse 
-ON 
-    enrollment.Course = corecourse.Course AND 
-    enrollment.Student_ID = ${req.query.studentId} AND
-    enrollment.fileID = '${req.query.fileId}' 
-LEFT JOIN
-	 enrollment AS credHrsEnrollment
-ON
-	 credHrsEnrollment.Course = corecourse.Course
-WHERE 
-    corecourse.sheetName = '${req.query.year}' AND 
-    corecourse.userID = ${req.query.userId} AND 
-    enrollment.Course IS NULL
-GROUP BY
-	  corecourse.Course;
+                        enrollment.Course, 
+                        CoreReplacements.columnID, 
+                        coursetypes.Type, 
+                        enrollment.Grade, 
+                        1 AS 'Taken', 
+                        coursetypes.isException,
+                        CoreReplacements.replaces,
+                        enrollment.Credit_Hrs
+                    FROM 
+                        enrollment 
+                    LEFT JOIN 
+                        (SELECT 
+                            *,
+                            NULL AS "replaces"
+                        FROM 
+                            corecourse 
+                        WHERE 
+                            corecourse.userID = ${req.query.userId} AND 
+                            corecourse.sheetName = '${req.query.year}' 
+                        UNION 
+                        SELECT 
+                            corecourse.userID, 
+                            coursereplacements.Replaces, 
+                            corecourse.columnID, 
+                            corecourse.sheetName,
+                            corecourse.Course
+                        FROM 
+                            corecourse 
+                        INNER JOIN 
+                            coursereplacements 
+                        ON 
+                            corecourse.Course = coursereplacements.Course AND 
+                            corecourse.userID = coursereplacements.userID 
+                        WHERE 
+                            corecourse.userID = ${req.query.userId} AND 
+                            corecourse.sheetName = '${req.query.year}' 
+                        ) CoreReplacements 
+                    ON 
+                        enrollment.Course = CoreReplacements.Course AND 
+                        CoreReplacements.sheetName = '${req.query.year}' AND 
+                        CoreReplacements.userID = ${req.query.userId} 
+                    LEFT JOIN 
+                        coursetypes 
+                    ON 
+                        enrollment.Course LIKE CONCAT(coursetypes.Course, '%') AND 
+                        coursetypes.userID = ${req.query.userId} 
+                    WHERE 
+                        enrollment.Student_ID = ${req.query.studentId} AND 
+                        enrollment.fileID = '${req.query.fileId}' AND
+                        (Enrollment.Grade IS NULL OR 
+                            NOT (Enrollment.Grade = 'W' OR 
+                                Enrollment.Grade = 'WF' OR 
+                                Enrollment.Grade = 'WD' OR 
+                                Enrollment.Grade = 'D' OR 
+                                Enrollment.Grade = 'F' OR 
+                                Enrollment.Grade = 'NCR' OR 
+                                Enrollment.Notes_Codes IS NOT NULL
+                                )
+                        ) 
+                    UNION ALL 
+                    SELECT 
+                        corecourse.Course, 
+                        corecourse.columnID, 
+                        NULL, 
+                        NULL, 
+                        0, 
+                        NULL,
+                        NULL,
+                        credHrsEnrollment.Credit_Hrs   
+                    FROM 
+                        enrollment 
+                    RIGHT JOIN 
+                        corecourse 
+                    ON 
+                        enrollment.Course = corecourse.Course AND 
+                        enrollment.Student_ID = ${req.query.studentId} AND
+                        enrollment.fileID = '${req.query.fileId}' 
+                    LEFT JOIN
+                      enrollment AS credHrsEnrollment
+                    ON
+                      credHrsEnrollment.Course = corecourse.Course
+                    WHERE 
+                        corecourse.sheetName = '${req.query.year}' AND 
+                        corecourse.userID = ${req.query.userId} AND 
+                        enrollment.Course IS NULL
+                    GROUP BY
+                        corecourse.Course;
                     `;            
         
     const resultTable = await sequelize.query(sqlQuery);
@@ -560,10 +560,8 @@ GROUP BY
                 if(formattedAudit.te.progress.includes(course.Course)) {
                   formattedAudit.te.progress.splice(formattedAudit.te.progress.indexOf(course.Course), 1);
                 }
-                formattedAudit.te.ccr -= parseInt(course.Credit_Hrs);
               } else {
                 formattedAudit.te.progress.push(course.Course);
-                formattedAudit.te.ccr += parseInt(course.Credit_Hrs);
               }
             }
             break;
@@ -583,10 +581,8 @@ GROUP BY
                 if(formattedAudit.ns.progress.includes(course.Course)) {
                   formattedAudit.ns.progress.splice(formattedAudit.ns.progress.indexOf(course.Course), 1);
                 }
-                formattedAudit.ns.ccr -= parseInt(course.Credit_Hrs);
               } else {
                 formattedAudit.ns.progress.push(course.Course);
-                formattedAudit.ns.ccr += parseInt(course.Credit_Hrs);
               }
             }
             break;
@@ -609,10 +605,8 @@ GROUP BY
                   if(formattedAudit.cse.progress.includes(course.Course)) {
                     formattedAudit.cse.progress.splice(formattedAudit.cse.progress.indexOf(course.Course), 1);
                   }
-                  formattedAudit.cse.ccr -= parseInt(course.Credit_Hrs);
                 } else {
                   formattedAudit.cse.progress.push(course.Course);
-                  formattedAudit.cse.ccr += parseInt(course.Credit_Hrs);
                 }
               }
             }
@@ -630,6 +624,7 @@ GROUP BY
       }
     }
 
+    console.log(formattedAudit);
     res.json(formattedAudit);
   } catch (err) {
     console.error(err);
