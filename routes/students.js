@@ -393,75 +393,6 @@ router.get('/getCoopCounts', async (req, res) =>{
 });
 
 /**
- * API endpoint that gets the core courses 
- * Parameters:
- *  userID = login id
- *  sheetName = year range (Ex. 2020-21)
- */
-router.get('/getCoreCourses', async (req, res) => {
-  try{
-    let sqlQuery = "SELECT corecourse.Course, corecourse.columnID FROM corecourse WHERE userID = '" + req.query.userID + "' AND sheetName = '" + req.query.sheetName + "';";
-    const resultTable = await sequelize.query(sqlQuery);
-    
-    res.json(resultTable);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send(err);
-  }
-});
-
-/**
- * API endpoint that gets the course prerequisites
- * Parameters:
- *  userID = login id
- */
- router.get('/getCoursePreReqs', async (req, res) => {
-  try{
-    let sqlQuery = "SELECT courseprereqs.Course, courseprereqs.PrereqFor, courseprereqs.isCoreq FROM courseprereqs WHERE userID = '" + req.query.userID + "';";
-    const resultTable = await sequelize.query(sqlQuery);
-    
-    res.json(resultTable);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send(err);
-  }
-});
-
-/**
- * API endpoint that gets the course replacements
- * Parameters:
- *  userID = login id
- */
- router.get('/getCourseReplacements', async (req, res) => {
-  try{
-    let sqlQuery = "SELECT coursereplacements.Course, coursereplacements.Replaces FROM coursereplacements WHERE userID = '" + req.query.userID + "';";
-    const resultTable = await sequelize.query(sqlQuery);
-    
-    res.json(resultTable);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send(err);
-  }
-});
-
-/**
- * API endpoint that gets the course types
- * Parameters:
- *  userID = login id
- */
- router.get('/getCourseTypes', async (req, res) => {
-  try{
-    let sqlQuery = "SELECT coursetypes.Course, coursetypes.Type, coursetypes.isSubject, coursetypes.isException FROM coursetypes WHERE userID = '" + req.query.userID + "';";
-    const resultTable = await sequelize.query(sqlQuery);
-    
-    res.json(resultTable);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send(err);
-  }
-});
-
-/**
  * API endpoint that gets a list of completed, in progress, and required for Core, TE, NS, etc. courses 
  * Parameters:
  *  userId = login id
@@ -472,168 +403,212 @@ router.get('/getCoreCourses', async (req, res) => {
 router.get('/getCompleteAudit', async (req, res) => {
   try{
     let sqlQuery = `SELECT 
-                        enrollment.Course, 
-                        CoreReplacements.columnID, 
-                        coursetypes.Type, 
-                        enrollment.Grade, 
-                        1 AS 'Taken', 
-                        coursetypes.isException,
-                        CoreReplacements.replaces
-                    FROM 
-                        enrollment 
-                    LEFT JOIN 
-                        (SELECT 
-                            *,
-                            NULL AS "replaces"
-                        FROM 
-                            corecourse 
-                        WHERE 
-                            corecourse.userID = ${req.query.userId} AND 
-                            corecourse.sheetName = '${req.query.year}' 
-                        UNION 
-                        SELECT 
-                            corecourse.userID, 
-                            coursereplacements.Replaces, 
-                            corecourse.columnID, 
-                            corecourse.sheetName,
-                            corecourse.Course
-                        FROM 
-                            corecourse 
-                        INNER JOIN 
-                            coursereplacements 
-                        ON 
-                            corecourse.Course = coursereplacements.Course AND 
-                            corecourse.userID = coursereplacements.userID 
-                        WHERE 
-                            corecourse.userID = ${req.query.userId} AND 
-                            corecourse.sheetName = '${req.query.year}' 
-                        ) CoreReplacements 
-                    ON 
-                        enrollment.Course = CoreReplacements.Course AND 
-                        CoreReplacements.sheetName = '${req.query.year}' AND 
-                        CoreReplacements.userID = ${req.query.userId} AND
-                    LEFT JOIN 
-                        coursetypes 
-                    ON 
-                        enrollment.Course LIKE CONCAT(coursetypes.Course, '%') AND 
-                        coursetypes.userID = ${req.query.userId} 
-                    WHERE 
-                        enrollment.Student_ID = ${req.query.studentId} AND 
-                        enrollment.fileId = '${req.query.fileId}' AND
-                        (Enrollment.Grade IS NULL OR 
-                            NOT (Enrollment.Grade = 'W' OR 
-                                Enrollment.Grade = 'WF' OR 
-                                Enrollment.Grade = 'WD' OR 
-                                Enrollment.Grade = 'D' OR 
-                                Enrollment.Grade = 'F' OR 
-                                Enrollment.Grade = 'NCR' OR 
-                                Enrollment.Notes_Codes IS NOT NULL
-                                )
-                        ) 
-                    UNION ALL 
-                    SELECT 
-                        corecourse.Course, 
-                        corecourse.columnID, 
-                        NULL, 
-                        NULL, 
-                        0, 
-                        NULL,
-                        NULL 
-                    FROM 
-                        enrollment 
-                    RIGHT JOIN 
-                        corecourse 
-                    ON 
-                        enrollment.Course = corecourse.Course AND 
-                        enrollment.Student_ID = ${req.query.studentId} AND
-                        enrollment.fileId = '${req.query.fileId}' 
-                    WHERE 
-                        corecourse.sheetName = '${req.query.year}' AND 
-                        corecourse.userID = ${req.query.userId} AND 
-                        enrollment.Course IS NULL;
+    enrollment.Course, 
+    CoreReplacements.columnID, 
+    coursetypes.Type, 
+    enrollment.Grade, 
+    1 AS 'Taken', 
+    coursetypes.isException,
+    CoreReplacements.replaces,
+    enrollment.Credit_Hrs
+FROM 
+    enrollment 
+LEFT JOIN 
+    (SELECT 
+        *,
+        NULL AS "replaces"
+    FROM 
+        corecourse 
+    WHERE 
+        corecourse.userID = ${req.query.userId} AND 
+        corecourse.sheetName = '2020-21' 
+    UNION 
+    SELECT 
+        corecourse.userID, 
+        coursereplacements.Replaces, 
+        corecourse.columnID, 
+        corecourse.sheetName,
+        corecourse.Course
+    FROM 
+        corecourse 
+    INNER JOIN 
+        coursereplacements 
+    ON 
+        corecourse.Course = coursereplacements.Course AND 
+        corecourse.userID = coursereplacements.userID 
+    WHERE 
+        corecourse.userID = ${req.query.userId} AND 
+        corecourse.sheetName = '2020-21' 
+    ) CoreReplacements 
+ON 
+    enrollment.Course = CoreReplacements.Course AND 
+    CoreReplacements.sheetName = '2020-21' AND 
+    CoreReplacements.userID = ${req.query.userId} 
+LEFT JOIN 
+    coursetypes 
+ON 
+    enrollment.Course LIKE CONCAT(coursetypes.Course, '%') AND 
+    coursetypes.userID = ${req.query.userId} 
+WHERE 
+    enrollment.Student_ID = ${req.query.studentId} AND 
+    enrollment.fileID = '${req.query.fileId}' AND
+    (Enrollment.Grade IS NULL OR 
+        NOT (Enrollment.Grade = 'W' OR 
+            Enrollment.Grade = 'WF' OR 
+            Enrollment.Grade = 'WD' OR 
+            Enrollment.Grade = 'D' OR 
+            Enrollment.Grade = 'F' OR 
+            Enrollment.Grade = 'NCR' OR 
+            Enrollment.Notes_Codes IS NOT NULL
+            )
+    ) 
+UNION ALL 
+SELECT 
+    corecourse.Course, 
+    corecourse.columnID, 
+    NULL, 
+    NULL, 
+    0, 
+    NULL,
+    NULL,
+    NULL  
+FROM 
+    enrollment 
+RIGHT JOIN 
+    corecourse 
+ON 
+    enrollment.Course = corecourse.Course AND 
+    enrollment.Student_ID = ${req.query.studentId} AND
+    enrollment.fileID = '${req.query.fileId}' 
+WHERE 
+    corecourse.sheetName = '2020-21' AND 
+    corecourse.userID = ${req.query.userId} AND 
+    enrollment.Course IS NULL;
                     `;
 
+    //${req.query.year}            
+        
     const resultTable = await sequelize.query(sqlQuery);
 
-    console.log(resultTable);
+    // console.log(resultTable);
     
-    const formattedAudit = {core: {completed: [], progress: [], required: []},
-                            te: {completed: [], progress: []},
-                            ns: {completed: [], progress: []},
-                            cse: {completed: [], progress: []}
+    const formattedAudit = {core: {ccr: 0, cr: 0, completed: [], progress: [], required: []},
+                            te: {ccr: 0, completed: [], progress: []},
+                            ns: {ccr: 0, completed: [], progress: []},
+                            cse: {ccr: 0, completed: [], progress: []}
     };
     
     const courseReplaces = [];
 
-    resultTable.forEach((course) => {
+    resultTable[0].forEach((course) => {
       if(course.columnID != null) {
         if(course.Taken == 0) {
-          if(course.replaces != null) {
-            courseReplaces.push(course.replaces);
-          } else {
             formattedAudit.core.required.push(course.Course);
-          }
         } else {
           if(course.Grade != null) {
-            formattedAudit.core.completed.push(course.Course);
+            if(!formattedAudit.core.completed.includes(course.Course)) {
+              if(course.replaces) {
+                formattedAudit.core.completed.push(`${course.replaces} **(${course.Course})`);
+              } else {
+                formattedAudit.core.completed.push(course.Course);
+              }
+              formattedAudit.core.ccr += parseInt(course.Credit_Hrs);
+            }
           } else {
-            formattedAudit.core.progress.push(course.Course);
+            if(course.replaces) {
+              formattedAudit.core.progress.push(`${course.replaces} **(${course.Course})`);
+            } else {
+            formattedAudit.core.progress.push(course);
+            }
           }
         }
+        formattedAudit.core.cr += course.Credit_Hrs ? parseInt(course.Credit_Hrs) : 0;
       } else {
         switch(course.Type){
           case "TE":
             if(course.Grade != null) {
               if(course.isException == 1) {
-                formattedAudit.te.completed.filter(obj => obj.Course != course.Course);
+                if(formattedAudit.te.completed.includes(course.Course)) {
+                  formattedAudit.te.completed.splice(formattedAudit.te.completed.indexOf(course.Course), 1);
+                }
+                formattedAudit.te.ccr -= parseInt(course.Credit_Hrs);
               } else {
                 formattedAudit.te.completed.push(course.Course);
+                formattedAudit.te.ccr += parseInt(course.Credit_Hrs);
               }
             } else {
               if(course.isException == 1) {
-                formattedAudit.te.progress.filter(obj => obj.Course != course.Course);
+                if(formattedAudit.te.progress.includes(course.Course)) {
+                  formattedAudit.te.progress.splice(formattedAudit.te.progress.indexOf(course.Course), 1);
+                }
+                formattedAudit.te.ccr -= parseInt(course.Credit_Hrs);
               } else {
                 formattedAudit.te.progress.push(course.Course);
+                formattedAudit.te.ccr += parseInt(course.Credit_Hrs);
               }
             }
             break;
           case "NS":
             if(course.Grade != null) {
               if(course.isException == 1) {
-                formattedAudit.ns.completed.filter(obj => obj.Course != course.Course);
+                if(formattedAudit.ns.completed.includes(course.Course)) {
+                  formattedAudit.ns.completed.splice(formattedAudit.ns.progress.indexOf(course.Course), 1);
+                }
+                formattedAudit.ns.ccr -= parseInt(course.Credit_Hrs);
               } else {
                 formattedAudit.ns.completed.push(course.Course);
+                formattedAudit.ns.ccr += parseInt(course.Credit_Hrs);
               }
             } else {
               if(course.isException == 1) {
-                formattedAudit.ns.progress.filter(obj => obj.Course != course.Course);
+                if(formattedAudit.ns.progress.includes(course.Course)) {
+                  formattedAudit.ns.progress.splice(formattedAudit.ns.progress.indexOf(course.Course), 1);
+                }
+                formattedAudit.ns.ccr -= parseInt(course.Credit_Hrs);
               } else {
                 formattedAudit.ns.progress.push(course.Course);
+                formattedAudit.ns.ccr += parseInt(course.Credit_Hrs);
+              }
+            }
+            break;
+          case "CSE-ITS":
+          case "CSE-HSS":
+          case "CSE-OPEN":
+            if(!formattedAudit.cse.completed.includes(course.Course)) {
+              if(course.Grade != null) {
+                if(course.isException == 1) {
+                  if(formattedAudit.cse.completed.includes(course.Course)) {
+                    formattedAudit.cse.completed.splice(formattedAudit.cse.progress.indexOf(course.Course), 1);
+                  }
+                  formattedAudit.cse.ccr -= parseInt(course.Credit_Hrs);
+                } else {
+                  formattedAudit.cse.completed.push(course.Course);
+                  formattedAudit.cse.ccr += parseInt(course.Credit_Hrs);
+                }
+              } else {
+                if(course.isException == 1) {
+                  if(formattedAudit.cse.progress.includes(course.Course)) {
+                    formattedAudit.cse.progress.splice(formattedAudit.cse.progress.indexOf(course.Course), 1);
+                  }
+                  formattedAudit.cse.ccr -= parseInt(course.Credit_Hrs);
+                } else {
+                  formattedAudit.cse.progress.push(course.Course);
+                  formattedAudit.cse.ccr += parseInt(course.Credit_Hrs);
+                }
               }
             }
             break;
           default:
-            if(course.Grade != null) {
-              if(course.isException == 1) {
-                formattedAudit.cse.completed.filter(obj => obj.Course != course.Course);
-              } else {
-                formattedAudit.cse.completed.push(course.Course);
-              }
-            } else {
-              if(course.isException == 1) {
-                formattedAudit.cse.progress.filter(obj => obj.Course != course.Course);
-              } else {
-                formattedAudit.cse.progress.push(course.Course);
-              }
-            }
-        }
-      }
-      for(let i = 0; i < courseReplaces.length; i++) {
-        if(formattedAudit.core.required.includes(courseReplaces[i])) {
-          formattedAudit.core.required.splice(formattedAudit.core.required.indexOf(courseReplaces[i]), 1);
+            console.log(course);
         }
       }
     });
+
+    // for(let i = 0; i < courseReplaces.length; i++) {
+    //   if(formattedAudit.core.required.includes(courseReplaces[i])) {
+    //     formattedAudit.core.required.splice(formattedAudit.core.required.indexOf(courseReplaces[i]), 1);
+    //   }
+    // }
 
     console.log(formattedAudit);
     res.json(formattedAudit);
