@@ -402,6 +402,7 @@ router.get('/getCoopCounts', async (req, res) =>{
  */
 router.get('/getCompleteAudit', async (req, res) => {
   try{
+    // SQLQuery that returns all the information needed for the audit. 
     let sqlQuery = `SELECT 
     enrollment.Course, 
     CoreReplacements.columnID, 
@@ -421,7 +422,7 @@ LEFT JOIN
         corecourse 
     WHERE 
         corecourse.userID = ${req.query.userId} AND 
-        corecourse.sheetName = '2020-21' 
+        corecourse.sheetName = '${req.query.year}' 
     UNION 
     SELECT 
         corecourse.userID, 
@@ -438,11 +439,11 @@ LEFT JOIN
         corecourse.userID = coursereplacements.userID 
     WHERE 
         corecourse.userID = ${req.query.userId} AND 
-        corecourse.sheetName = '2020-21' 
+        corecourse.sheetName = '${req.query.year}' 
     ) CoreReplacements 
 ON 
     enrollment.Course = CoreReplacements.Course AND 
-    CoreReplacements.sheetName = '2020-21' AND 
+    CoreReplacements.sheetName = '${req.query.year}' AND 
     CoreReplacements.userID = ${req.query.userId} 
 LEFT JOIN 
     coursetypes 
@@ -471,7 +472,7 @@ SELECT
     0, 
     NULL,
     NULL,
-    NULL  
+    credHrsEnrollment.Credit_Hrs   
 FROM 
     enrollment 
 RIGHT JOIN 
@@ -480,49 +481,66 @@ ON
     enrollment.Course = corecourse.Course AND 
     enrollment.Student_ID = ${req.query.studentId} AND
     enrollment.fileID = '${req.query.fileId}' 
+LEFT JOIN
+	 enrollment AS credHrsEnrollment
+ON
+	 credHrsEnrollment.Course = corecourse.Course
 WHERE 
-    corecourse.sheetName = '2020-21' AND 
+    corecourse.sheetName = '${req.query.year}' AND 
     corecourse.userID = ${req.query.userId} AND 
-    enrollment.Course IS NULL;
-                    `;
-
-    //${req.query.year}            
+    enrollment.Course IS NULL
+GROUP BY
+	  corecourse.Course;
+                    `;            
         
     const resultTable = await sequelize.query(sqlQuery);
 
-    // console.log(resultTable);
-    
+    // needed format to send to the UI 
     const formattedAudit = {core: {ccr: 0, cr: 0, completed: [], progress: [], required: []},
                             te: {ccr: 0, completed: [], progress: []},
                             ns: {ccr: 0, completed: [], progress: []},
                             cse: {ccr: 0, completed: [], progress: []}
     };
     
+    // storing the course that are being replaced
     const courseReplaces = [];
 
+    /**
+     *  going through each JSON object (course) and adding it to the appropriate array in the formattedAudit JSON object
+     *  columnId != null  | core course
+     *  grade != null     | the course is completed
+     *  grade = null      | the course is in progress
+     *  taken = 0         | the course is required
+     *  replaces != null  | a course replaces another course
+     *  isException = 1   | the course is an excpetion for that type (TE,NS,CSE)
+     */
     resultTable[0].forEach((course) => {
       if(course.columnID != null) {
-        if(course.Taken == 0) {
-            formattedAudit.core.required.push(course.Course);
-        } else {
-          if(course.Grade != null) {
-            if(!formattedAudit.core.completed.includes(course.Course)) {
-              if(course.replaces) {
-                formattedAudit.core.completed.push(`${course.replaces} **(${course.Course})`);
-              } else {
-                formattedAudit.core.completed.push(course.Course);
-              }
-              formattedAudit.core.ccr += parseInt(course.Credit_Hrs);
-            }
+        if(course.isException != 1) {
+          if(course.Taken == 0) {
+              formattedAudit.core.required.push(course.Course);
           } else {
-            if(course.replaces) {
-              formattedAudit.core.progress.push(`${course.replaces} **(${course.Course})`);
+            if(course.Grade != null) {
+              if(!formattedAudit.core.completed.includes(course.Course)) {
+                if(course.replaces) {
+                  courseReplaces.push({name: course.replaces, crdhrs: course.Credit_Hrs});
+                  formattedAudit.core.completed.push(`${course.replaces} **(${course.Course})`);
+                } else {
+                  formattedAudit.core.completed.push(course.Course);
+                }
+                formattedAudit.core.ccr += parseInt(course.Credit_Hrs);
+              }
             } else {
-            formattedAudit.core.progress.push(course);
+              if(course.replaces) {
+                courseReplaces.push({name: course.replaces, crdhrs: course.Credit_Hrs});
+                formattedAudit.core.progress.push(`${course.replaces} **(${course.Course})`);
+              } else {
+              formattedAudit.core.progress.push(course.Course);
+              }
             }
           }
+          formattedAudit.core.cr += course.Credit_Hrs ? parseInt(course.Credit_Hrs) : 0;
         }
-        formattedAudit.core.cr += course.Credit_Hrs ? parseInt(course.Credit_Hrs) : 0;
       } else {
         switch(course.Type){
           case "TE":
@@ -599,18 +617,18 @@ WHERE
             }
             break;
           default:
-            console.log(course);
         }
       }
     });
 
-    // for(let i = 0; i < courseReplaces.length; i++) {
-    //   if(formattedAudit.core.required.includes(courseReplaces[i])) {
-    //     formattedAudit.core.required.splice(formattedAudit.core.required.indexOf(courseReplaces[i]), 1);
-    //   }
-    // }
+    for(let i = 0; i < courseReplaces.length; i++) {
+      let courseIndex = formattedAudit.core.required.indexOf(courseReplaces[i].name);
+      if(courseIndex != -1) {
+        formattedAudit.core.cr -= parseInt(courseReplaces[i].crdhrs);
+        formattedAudit.core.required.splice(courseIndex, 1);
+      }
+    }
 
-    console.log(formattedAudit);
     res.json(formattedAudit);
   } catch (err) {
     console.error(err);
