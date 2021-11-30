@@ -1,5 +1,5 @@
 module.exports = (sequelize, Sequelize) => {
-    const CoreCourse = sequelize.define("CoreCourse", {
+    const CourseGroups = sequelize.define("CourseGroups", {
       userID: {
         type: Sequelize.INTEGER,
         primaryKey: true,
@@ -10,14 +10,13 @@ module.exports = (sequelize, Sequelize) => {
         primaryKey: true,
         allowNull: false
       },
-      columnID: {
-        type: Sequelize.INTEGER,
+      Group: {
+        type: Sequelize.STRING(15),
         primaryKey: true,
         allowNull: false
       },
-      sheetName: {
-        type: Sequelize.STRING(50),
-        primaryKey: true,
+      isSubject: {
+        type: Sequelize.INTEGER,
         allowNull: false
       },
     }, {
@@ -25,5 +24,5 @@ module.exports = (sequelize, Sequelize) => {
       timestamps: false,
     });
   
-    return CoreCourse;
+    return CourseGroups;
   };

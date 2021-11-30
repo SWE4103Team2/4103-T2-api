@@ -1,5 +1,5 @@
 module.exports = (sequelize, Sequelize) => {
-    const CoreCourse = sequelize.define("CoreCourse", {
+    const CoursePrereqs = sequelize.define("CoursePrereqs", {
       userID: {
         type: Sequelize.INTEGER,
         primaryKey: true,
@@ -10,14 +10,13 @@ module.exports = (sequelize, Sequelize) => {
         primaryKey: true,
         allowNull: false
       },
-      columnID: {
-        type: Sequelize.INTEGER,
+      PrereqFor: {
+        type: Sequelize.STRING(9),
         primaryKey: true,
         allowNull: false
       },
-      sheetName: {
-        type: Sequelize.STRING(50),
-        primaryKey: true,
+      isCoreq: {
+        type: Sequelize.INTEGER,
         allowNull: false
       },
     }, {
@@ -25,5 +24,5 @@ module.exports = (sequelize, Sequelize) => {
       timestamps: false,
     });
   
-    return CoreCourse;
+    return CoursePrereqs;
   };
