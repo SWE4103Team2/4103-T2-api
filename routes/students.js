@@ -624,7 +624,6 @@ router.get('/getCompleteAudit', async (req, res) => {
       }
     }
 
-    console.log(formattedAudit);
     res.json(formattedAudit);
   } catch (err) {
     console.error(err);
