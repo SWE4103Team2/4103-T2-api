@@ -11,6 +11,6 @@ describe("test index", () => {
     }),
     test("test models", () => {
         expect(typeof index.sequelize.models).toBe("object");
-        expect(Object.keys(index.sequelize.models)).toEqual(["Student", "Enrollment", "FileTime", "CoreCourse"]);
+        expect(Object.keys(index.sequelize.models)).toEqual(["Student", "Enrollment", "FileTime", "CoreCourse", "CourseGroups", "CoursePrereqs", "CourseReplacements", "CourseTypes"]);
     })
 })
