@@ -6,8 +6,8 @@ const sequelize = new Sequelize(
   process.env.DB_USERNAME,
   process.env.DB_PASSWORD,
   {
-    host: 'themis.xn--9xa.network',
-    dialect: 'mariadb',
+    host: 'swe4103t2bruh.mysql.database.azure.com',
+    dialect: 'mysql',
     logging: false
   }
 );
