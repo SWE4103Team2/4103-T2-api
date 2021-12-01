@@ -494,9 +494,8 @@ router.get('/getCompleteAudit', async (req, res) => {
                     `;            
         
     const resultTable = await sequelize.query(sqlQuery);
-
-    // console.log(resultTable);
     
+    // necessary format to give to the UI
     const formattedAudit = {
       core: {ccr: 0, cr: 0, completed: [], progress: [], required: [] },
       te:   {ccr: 0, completed: [], progress: [] },
@@ -537,7 +536,7 @@ router.get('/getCompleteAudit', async (req, res) => {
                 courseReplaces.push({name: course.replaces, crdhrs: course.Credit_Hrs});
                 formattedAudit.core.progress.push(`${course.replaces} **(${course.Course})`);
               } else {
-              formattedAudit.core.progress.push(course.Course);
+                formattedAudit.core.progress.push(course.Course);
               }
             }
           }
