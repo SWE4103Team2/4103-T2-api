@@ -39,5 +39,4 @@ const getDataObj = (keys, linesArr, fileName) => {
 
   return objArr;
 };
-
 module.exports = { readFile, splitByNewLine, splitByTab, getDataObj };
