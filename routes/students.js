@@ -329,37 +329,29 @@ router.get('/getYear', async (req, res) =>{
       
       for(let i = 0; i < resultTable[0].length; i++){
         if(resultTable[0][i].Year !== "null"){
+          resultTable[0][i].YearOf -= resultTable[0][i].MonthOf < 9 ? 1 : 0;
           if(resultTable[0][i].Year <= "1"){
             finalTable[0][0] += 1;
-            if(req.query.year == resultTable[0][i].YearOf && resultTable[0][i].MonthOf >= 9){
+            if(req.query.year == resultTable[0][i].YearOf){
               finalTable[1][0] += 1;
             }
           }
           else if(resultTable[0][i].Year == "2"){
             finalTable[0][1] += 1;
-            if(req.query.year == resultTable[0][i].YearOf && resultTable[0][i].MonthOf >= 9){
+            if(req.query.year == resultTable[0][i].YearOf){
               finalTable[1][1] += 1;
-            }
-            else if(req.query.year == resultTable[0][i].YearOf && resultTable[0][i].MonthOf < 9){
-              finalTable[1][0] += 1;
             }
           }
           else if(resultTable[0][i].Year == "3"){
             finalTable[0][2] += 1;
-            if(req.query.year == resultTable[0][i].YearOf && resultTable[0][i].MonthOf >= 9){
+            if(req.query.year == resultTable[0][i].YearOf){
               finalTable[1][2] += 1;
-            }
-            else if(req.query.year == resultTable[0][i].YearOf && resultTable[0][i].MonthOf < 9){
-              finalTable[1][1] += 1;
             }
           }
           else if(resultTable[0][i].Year >= "4"){
             finalTable[0][3] += 1;
-            if(req.query.year == resultTable[0][i].YearOf && resultTable[0][i].MonthOf >= 9){
+            if(req.query.year == resultTable[0][i].YearOf){
               finalTable[1][3] += 1;
-            }
-            else if(req.query.year == resultTable[0][i].YearOf && resultTable[0][i].MonthOf < 9){
-              finalTable[1][2] += 1;
             }
           }
         }
@@ -412,7 +404,7 @@ router.get('/getCampusCounts', async (req, res) =>{
   try{
     let sqlQuery;
     if(req.query.year !== "Total" && (typeof req.query.year !== 'undefined')){
-      sqlQuery = "SELECT Student.campus AS countName, COUNT(Student.Student_ID) AS Count FROM Student WHERE Student.fileID = '" + req.query.file + "' AND YEAR(Student.Start_Date) = '" + req.query.year + "' GROUP BY Student.campus";
+      sqlQuery = "SELECT Student.campus AS countName, COUNT(Student.Student_ID) AS Count FROM Student WHERE Student.fileID = '" + req.query.file + "' AND YEAR(ADDDATE(student.Start_Date, -243)) = '" + req.query.year + "' GROUP BY Student.campus";
     }
     else{
       sqlQuery = "SELECT Student.campus AS countName, COUNT(Student.Student_ID) AS Count FROM Student WHERE Student.fileID = '" + req.query.file + "' GROUP BY Student.campus";
@@ -453,7 +445,7 @@ router.get('/getCoopCounts', async (req, res) =>{
   try{
     let sqlQuery
     if(req.query.year !== "Total" && (typeof req.query.year !== 'undefined')){
-      sqlQuery = "SELECT Enrollment.Course AS countName, Count(DISTINCT Student.student_ID) AS Count FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID WHERE Student.fileID = '" + req.query.file + "' AND YEAR(Student.Start_Date) = '" + req.query.year + "' AND (Enrollment.Course LIKE '%COOP' OR Enrollment.Course LIKE '%PEP') GROUP BY Enrollment.Course";
+      sqlQuery = "SELECT Enrollment.Course AS countName, Count(DISTINCT Student.student_ID) AS Count FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID WHERE Student.fileID = '" + req.query.file + "' AND YEAR(ADDDATE(student.Start_Date, -243)) = '" + req.query.year + "' AND (Enrollment.Course LIKE '%COOP' OR Enrollment.Course LIKE '%PEP') GROUP BY Enrollment.Course";
     }
     else{
       sqlQuery = "SELECT Enrollment.Course AS countName, Count(DISTINCT Student.student_ID) AS Count FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID WHERE Student.fileID = '" + req.query.file + "' AND (Enrollment.Course LIKE '%COOP' OR Enrollment.Course LIKE '%PEP') GROUP BY Enrollment.Course";
