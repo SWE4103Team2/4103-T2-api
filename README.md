@@ -1,3 +1,5 @@
+[![Node.js CI](https://github.com/SWE4103Team2/4103-T2-api/actions/workflows/node.js.yml/badge.svg?branch=testing)](https://github.com/SWE4103Team2/4103-T2-api/actions/workflows/node.js.yml)
+
 # Setup
 ### Beforehand
 Go through the setup of the ui first so that you have the global packages (yarn, npm).
