@@ -610,7 +610,7 @@ router.get('/getCompleteAudit', async (req, res) => {
           }
           formattedAudit.core.cr += course.Credit_Hrs ? parseInt(course.Credit_Hrs) : 0;
         }
-      } else {
+      } else if (!course.Course.match(".*(COOP|PEP)")){
         switch(course.Type){
           case "TE":
             if(course.Grade != null) {
