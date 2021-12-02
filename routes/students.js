@@ -207,20 +207,19 @@ Parameters:
 router.get('/getYear', async (req, res) =>{
   try {
     let SQLQuery;
-    
     if(req.query.type === "0") {         // 0 means by credit hours (40h per year)
-      SQLQuery = "SELECT CEILING(SUM(Credit_Hrs)/40) AS 'Year' FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR' OR Enrollment.Notes_Codes IS NOT NULL) WHERE Student.fileID = '" + req.query.file + "' GROUP BY Student.Student_ID";
+      SQLQuery = "SELECT CEILING(SUM(Credit_Hrs)/40) AS 'Year',  YEAR(Student.Start_Date) AS 'YearOf', MONTH(Student.Start_Date) AS 'MonthOf' FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR' OR Enrollment.Notes_Codes IS NOT NULL) WHERE Student.fileID = '" + req.query.file + "' GROUP BY Student.Student_ID";
     }
     else if(req.query.type === "1") {    // 1 means by exact start date
-      SQLQuery = "SELECT CEILING(DATEDIFF(NOW(), Start_Date)/365) AS 'Year' FROM Student WHERE Student.fileID = '" + req.query.file + "'";
+      SQLQuery = "SELECT CEILING(DATEDIFF(NOW(), Start_Date)/365) AS 'Year',  YEAR(Student.Start_Date) AS 'YearOf', MONTH(Student.Start_Date) AS 'MonthOf' FROM Student WHERE Student.fileID = '" + req.query.file + "'";
     }
     else if(req.query.type === "2") {    // 2 means by cohort
-      SQLQuery = "SELECT CEILING(DATEDIFF(NOW(), ADDDATE(Start_Date, -243))/365) AS 'Year' FROM Student WHERE Student.fileID = '" + req.query.file + "'";
+      SQLQuery = "SELECT CEILING(DATEDIFF(NOW(), ADDDATE(Start_Date, -243))/365) AS 'Year',  YEAR(Student.Start_Date) AS 'YearOf', MONTH(Student.Start_Date) AS 'MonthOf' FROM Student WHERE Student.fileID = '" + req.query.file + "'";
     }
     else if(req.query.type === "3") {    // 3 means by core Courses
-      SQLQuery = "SELECT COUNT(Enrollment.Student_ID) AS 'Year' FROM CoreCourse LEFT JOIN Enrollment ON CoreCourse.Course = Enrollment.Course AND CoreCourse.userID = " + req.query.userID + " RIGHT JOIN Student ON Student.Student_ID = Enrollment.Student_ID AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR' OR Enrollment.Notes_Codes IS NOT NULL) WHERE Student.fileID = '" + req.query.file + "' GROUP BY Student.Student_ID";
+      SQLQuery = "SELECT COUNT(Enrollment.Student_ID) AS 'Year',  YEAR(Student.Start_Date) AS 'YearOf', MONTH(Student.Start_Date) AS 'MonthOf' FROM CoreCourse LEFT JOIN Enrollment ON CoreCourse.Course = Enrollment.Course AND CoreCourse.userID = " + req.query.userID + " RIGHT JOIN Student ON Student.Student_ID = Enrollment.Student_ID AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR' OR Enrollment.Notes_Codes IS NOT NULL) WHERE Student.fileID = '" + req.query.file + "' GROUP BY Student.Student_ID";
     }
-    else if(req.query.type === "4") {    // 4 means by the fixed SWE requirements
+    else if(req.query.type === "4") {    // 4 means by the fixed SWE requirements+
       var searchObject = JSON.parse(req.query.searchObject);
       
       SQLQuery = "SELECT SUM(IF(";
@@ -262,15 +261,17 @@ router.get('/getYear', async (req, res) =>{
         SQLQuery += "FALSE";
       }
 
-      SQLQuery += ",  10000, 0)))) AS 'CourseCount', SUM(Credit_Hrs) AS 'CreditHours' FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR' OR Enrollment.Notes_Codes IS NOT NULL) WHERE Student.fileID = '" + req.query.file + "' GROUP BY Student.Student_ID";
+      SQLQuery += ",  10000, 0)))) AS 'CourseCount', SUM(Credit_Hrs) AS 'CreditHours',  YEAR(Student.Start_Date) AS 'YearOf', MONTH(Student.Start_Date) AS 'MonthOf'  FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR' OR Enrollment.Notes_Codes IS NOT NULL) WHERE Student.fileID = '" + req.query.file + "' GROUP BY Student.Student_ID";
     }
     else {
       res.json([]);
       return;
     }
 
-
+    
+    
     const resultTable = await sequelize.query(SQLQuery);
+
     if(req.query.type === "3") {         // Formatting for the by core course
       for(let i = 0; i < resultTable[0].length; i++) {
         if(resultTable[0][i].Year < 13) {
@@ -306,29 +307,59 @@ router.get('/getYear', async (req, res) =>{
         }
       }
     }
-
-    //console.log(req.query);
+    
     if(req.query.count === "true") {
-      let finalTable = [0,0,0,0];
+      let finalTable = [[0,0,0,0], 
+                [0,0,0,0]];
+      
       for(let i = 0; i < resultTable[0].length; i++){
         if(resultTable[0][i].Year !== "null"){
           if(resultTable[0][i].Year <= "1"){
-            finalTable[0] += 1;
+            finalTable[0][0] += 1;
+            if(req.query.year == resultTable[0][i].YearOf && resultTable[0][i].MonthOf >= 9){
+              finalTable[1][0] += 1;
+            }
           }
           else if(resultTable[0][i].Year == "2"){
-            finalTable[1] += 1;
+            finalTable[0][1] += 1;
+            if(req.query.year == resultTable[0][i].YearOf && resultTable[0][i].MonthOf >= 9){
+              finalTable[1][1] += 1;
+            }
+            else if(req.query.year == resultTable[0][i].YearOf && resultTable[0][i].MonthOf < 9){
+              finalTable[1][0] += 1;
+            }
           }
           else if(resultTable[0][i].Year == "3"){
-            finalTable[2] += 1;
+            finalTable[0][2] += 1;
+            if(req.query.year == resultTable[0][i].YearOf && resultTable[0][i].MonthOf >= 9){
+              finalTable[1][2] += 1;
+            }
+            else if(req.query.year == resultTable[0][i].YearOf && resultTable[0][i].MonthOf < 9){
+              finalTable[1][1] += 1;
+            }
           }
           else if(resultTable[0][i].Year >= "4"){
-            finalTable[3] += 1;
+            finalTable[0][3] += 1;
+            if(req.query.year == resultTable[0][i].YearOf && resultTable[0][i].MonthOf >= 9){
+              finalTable[1][3] += 1;
+            }
+            else if(req.query.year == resultTable[0][i].YearOf && resultTable[0][i].MonthOf < 9){
+              finalTable[1][2] += 1;
+            }
           }
         }
-      }   
-      //console.log(finalTable)
-    let rankObject = [{countName: "FIR", Count: finalTable[0]}, {countName: "SOP", Count: finalTable[1]}, {countName: "JUN", Count: finalTable[2]}, {countName: "SEN", Count: finalTable[3]}];
-    res.json(rankObject);
+      }
+
+      
+      let rankObject = [];
+      if(req.query.year !== "Total" && (typeof req.query.year !== 'undefined')){
+        rankObject = [{countName: "FIR", CountTotal: finalTable[1][0]}, {countName: "SOP", CountTotal: finalTable[1][1]}, {countName: "JUN", CountTotal: finalTable[1][2]}, {countName: "SEN", CountTotal: finalTable[1][3]}];
+      }
+      else{
+        rankObject = [{countName: "FIR", CountTotal: finalTable[0][0]}, {countName: "SOP", CountTotal: finalTable[0][1]}, {countName: "JUN", CountTotal: finalTable[0][2]}, {countName: "SEN", CountTotal: finalTable[0][3]}];
+      }
+
+      res.json(rankObject);
 
     } else {
       res.json(resultTable[0]);
@@ -340,14 +371,37 @@ router.get('/getYear', async (req, res) =>{
 })
 
 /**
+ * API endpoint to get all avaible years
+ * Parameters:
+ * file = the fileID
+ */
+router.get('/getStartYears', async (req, res) =>{
+  try{
+    let sqlQuery;
+    sqlQuery = "SELECT YEAR(Student.Start_Date) AS Year FROM Student WHERE Student.fileID = '" + req.query.file + "' GROUP BY YEAR(Student.Start_Date)";
+    const resultTable = await sequelize.query(sqlQuery);
+    res.json(resultTable[0]);
+    
+  } catch (err) {
+    console.error(err);
+  }
+});
+
+/**
  * API endpoint to get the count of students per entered campus
  * Parameters:
  *  file = The file ID
+ *  year = For entered year
  */
 router.get('/getCampusCounts', async (req, res) =>{
   try{
     let sqlQuery;
-    sqlQuery = "SELECT Student.campus AS countName, COUNT(Student.Student_ID) AS Count FROM Student WHERE Student.fileID = '" + req.query.file + "' GROUP BY Student.campus";
+    if(req.query.year !== "Total" && (typeof req.query.year !== 'undefined')){
+      sqlQuery = "SELECT Student.campus AS countName, COUNT(Student.Student_ID) AS Count FROM Student WHERE Student.fileID = '" + req.query.file + "' AND YEAR(Student.Start_Date) = '" + req.query.year + "' GROUP BY Student.campus";
+    }
+    else{
+      sqlQuery = "SELECT Student.campus AS countName, COUNT(Student.Student_ID) AS Count FROM Student WHERE Student.fileID = '" + req.query.file + "' GROUP BY Student.campus";
+    }
     const resultTable = await sequelize.query(sqlQuery);
     res.json(resultTable[0]);
   } catch (err) {
@@ -378,10 +432,17 @@ router.get('/getCourseCounts', async (req, res) =>{
  * API endpoint that gets counts of coops
  * Parameters:
  *  file = The file ID
+ *  year = For entered year
  */
 router.get('/getCoopCounts', async (req, res) =>{
   try{
-    let sqlQuery = "SELECT Enrollment.Course AS countName, Count(DISTINCT Student.student_ID) AS Count FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID WHERE Student.fileID = '" + req.query.file + "' AND (Enrollment.Course LIKE '%COOP' OR Enrollment.Course LIKE '%PEP') GROUP BY Enrollment.Course";
+    let sqlQuery
+    if(req.query.year !== "Total" && (typeof req.query.year !== 'undefined')){
+      sqlQuery = "SELECT Enrollment.Course AS countName, Count(DISTINCT Student.student_ID) AS Count FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID WHERE Student.fileID = '" + req.query.file + "' AND YEAR(Student.Start_Date) = '" + req.query.year + "' AND (Enrollment.Course LIKE '%COOP' OR Enrollment.Course LIKE '%PEP') GROUP BY Enrollment.Course";
+    }
+    else{
+      sqlQuery = "SELECT Enrollment.Course AS countName, Count(DISTINCT Student.student_ID) AS Count FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID WHERE Student.fileID = '" + req.query.file + "' AND (Enrollment.Course LIKE '%COOP' OR Enrollment.Course LIKE '%PEP') GROUP BY Enrollment.Course";
+    }
     const resultTable = await sequelize.query(sqlQuery);
     
     //console.log(resultTable[0]);
