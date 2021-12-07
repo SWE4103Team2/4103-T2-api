@@ -30,11 +30,61 @@ Retrieve a Student's Enrollment in Courses.
 Parameters:
 -> file         : The File ID (REQUIRED).
 -> studentID    : Student's ID (REQUIRED).
+-> userID       : Login ID (REQUIRED).
+-> cohort       : Cohort of the student (REQUIRED).
 **************************************************************/
 router.get('/getEnrollment', async (req, res) => {
   try {
     const sheetName = req.query.cohort.substring(0, 7);
-    const fileList = await sequelize.query("SELECT Enrollment.*, CoreCourse.userID AS 'isCore' FROM Enrollment LEFT JOIN CoreCourse ON Enrollment.Course = CoreCourse.Course AND CoreCourse.userID = '" + req.query.userID + "' AND CoreCourse.sheetName = '" + sheetName + "' WHERE Enrollment.fileID = '" + req.query.file + "' AND Enrollment.Student_ID = '" + req.query.studentID + "'");
+    const SQLQuery = `SELECT 
+                        Enrollment.*, 
+                        CoreReplacements.Course AS 'isCore',
+                        GROUP_CONCAT(coursetypes.Type) AS 'Type'
+                      FROM 
+                        Enrollment 
+                      LEFT JOIN 
+                        (SELECT 
+                            *,
+                            NULL AS "replaces"
+                        FROM 
+                            corecourse 
+                        WHERE 
+                            corecourse.userID = ${req.query.userID} AND 
+                            corecourse.sheetName = '${sheetName}' 
+                        UNION 
+                        SELECT 
+                            corecourse.userID, 
+                            coursereplacements.Replaces, 
+                            corecourse.columnID, 
+                            corecourse.sheetName,
+                            corecourse.Course
+                        FROM 
+                            corecourse 
+                        INNER JOIN 
+                            coursereplacements 
+                        ON 
+                            corecourse.Course = coursereplacements.Course AND 
+                            corecourse.userID = coursereplacements.userID 
+                        WHERE 
+                            corecourse.userID = ${req.query.userID} AND 
+                            corecourse.sheetName = '${sheetName}' 
+                        ) CoreReplacements
+                      ON 
+                        Enrollment.Course = CoreReplacements.Course AND 
+                        CoreReplacements.userID = ${req.query.userID} AND 
+                        CoreReplacements.sheetName = '${sheetName}' 
+                      LEFT JOIN 
+                        coursetypes 
+                      ON 
+                        Enrollment.Course LIKE CONCAT(coursetypes.Course, '%') AND 
+                        coursetypes.userID = ${req.query.userID} AND
+                        coursetypes.isException = 0
+                      WHERE 
+                        Enrollment.fileID = '${req.query.file}' AND 
+                        Enrollment.Student_ID = '${req.query.studentID}'
+                      GROUP BY
+                        enrollment.Course, enrollment.Term`;
+    const fileList = await sequelize.query(SQLQuery);
     res.json(fileList[0]);
   } catch (err) {
     console.error(err);
@@ -588,6 +638,7 @@ router.get('/getCompleteAudit', async (req, res) => {
         if(course.isException != 1) {
           if(course.Taken == 0) {
               formattedAudit.core.required.push(course.Course);
+              formattedAudit.core.cr += course.Credit_Hrs ? parseInt(course.Credit_Hrs) : 0;
           } else {
             if(course.Grade != null) {
               if(!formattedAudit.core.completed.includes(course.Course)) {
@@ -608,7 +659,6 @@ router.get('/getCompleteAudit', async (req, res) => {
               }
             }
           }
-          formattedAudit.core.cr += course.Credit_Hrs ? parseInt(course.Credit_Hrs) : 0;
         }
       } else if (!course.Course.match(".*(COOP|PEP)")){
         switch(course.Type){
@@ -691,6 +741,8 @@ router.get('/getCompleteAudit', async (req, res) => {
         formattedAudit.core.required.splice(courseIndex, 1);
       }
     }
+
+    formattedAudit.core.cr += formattedAudit.core.ccr;
 
     res.json(formattedAudit);
   } catch (err) {
