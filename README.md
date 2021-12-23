@@ -1,3 +1,5 @@
+[![Node.js CI](https://github.com/SWE4103Team2/4103-T2-api/actions/workflows/node.js.yml/badge.svg?branch=testing)](https://github.com/SWE4103Team2/4103-T2-api/actions/workflows/node.js.yml)
+
 # Setup
 ### Beforehand
 Go through the setup of the ui first so that you have the global packages (yarn, npm).
@@ -24,5 +26,5 @@ Then Run:
 
 ### .env
 DB_NAME=SWE4103T2
-DB_USERNAME=admin
-DB_PASSWORD=PQzU$5vchmev!T2d%w8yCGosfqg%q#!9hcLN%c
+DB_USERNAME=SWEadmin@swe4103t2bruh
+DB_PASSWORD=S1KvThu59KldwHvR5i3v

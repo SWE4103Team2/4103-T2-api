@@ -1,6 +1,8 @@
 const express = require('express');
 let router = express.Router();
 
+const { readFile } = require('../util/fileUtil');
+
 const { sequelize, Student, Enrollment, FileTime, CoreCourse } = require('../models');
 const db = require('../models/index');
 /**************************************************************
@@ -28,10 +30,61 @@ Retrieve a Student's Enrollment in Courses.
 Parameters:
 -> file         : The File ID (REQUIRED).
 -> studentID    : Student's ID (REQUIRED).
+-> userID       : Login ID (REQUIRED).
+-> cohort       : Cohort of the student (REQUIRED).
 **************************************************************/
 router.get('/getEnrollment', async (req, res) => {
   try {
-    const fileList = await sequelize.query("SELECT Enrollment.*, CoreCourse.userID AS 'isCore' FROM Enrollment LEFT JOIN CoreCourse ON Enrollment.Course = CoreCourse.Course AND CoreCourse.userID = '" + req.query.userID + "' WHERE Enrollment.fileID = '" + req.query.file + "' AND Enrollment.Student_ID = '" + req.query.studentID + "'");
+    const sheetName = req.query.cohort.substring(0, 7);
+    const SQLQuery = `SELECT 
+                        Enrollment.*, 
+                        CoreReplacements.Course AS 'isCore',
+                        GROUP_CONCAT(coursetypes.Type) AS 'Type'
+                      FROM 
+                        Enrollment 
+                      LEFT JOIN 
+                        (SELECT 
+                            *,
+                            NULL AS "replaces"
+                        FROM 
+                            corecourse 
+                        WHERE 
+                            corecourse.userID = ${req.query.userID} AND 
+                            corecourse.sheetName = '${sheetName}' 
+                        UNION 
+                        SELECT 
+                            corecourse.userID, 
+                            coursereplacements.Replaces, 
+                            corecourse.columnID, 
+                            corecourse.sheetName,
+                            corecourse.Course
+                        FROM 
+                            corecourse 
+                        INNER JOIN 
+                            coursereplacements 
+                        ON 
+                            corecourse.Course = coursereplacements.Course AND 
+                            corecourse.userID = coursereplacements.userID 
+                        WHERE 
+                            corecourse.userID = ${req.query.userID} AND 
+                            corecourse.sheetName = '${sheetName}' 
+                        ) CoreReplacements
+                      ON 
+                        Enrollment.Course = CoreReplacements.Course AND 
+                        CoreReplacements.userID = ${req.query.userID} AND 
+                        CoreReplacements.sheetName = '${sheetName}' 
+                      LEFT JOIN 
+                        coursetypes 
+                      ON 
+                        Enrollment.Course LIKE CONCAT(coursetypes.Course, '%') AND 
+                        coursetypes.userID = ${req.query.userID} AND
+                        coursetypes.isException = 0
+                      WHERE 
+                        Enrollment.fileID = '${req.query.file}' AND 
+                        Enrollment.Student_ID = '${req.query.studentID}'
+                      GROUP BY
+                        enrollment.Course, enrollment.Term`;
+    const fileList = await sequelize.query(SQLQuery);
     res.json(fileList[0]);
   } catch (err) {
     console.error(err);
@@ -95,17 +148,56 @@ Parameters:
 -> arr          : Core Courses Array (REQUIRED).
 -> id           : Users Login ID (REQUIRED).
 **************************************************************/
- router.get('/uploadXLSX', async (req, res) => {
+ router.post('/uploadXLSX', async (req, res) => {
   try {
-    const result = {};
-    const data = req.query.arr.map(Course => {
-      return { userID: req.query.userID, Course };
+    const result = {'delete' : 0, 'insert' : 0};
+    let ret = 0;
+    const data = JSON.parse(req.body.BRUH);
+    Object.keys(data).forEach(sheet => {
+      data[sheet].forEach(row => {
+        row.userID = req.query.userID;
+      })
     })
+    
+    if(data["prereqs"]){
+      ret = await db.CoursePrereqs.destroy({ where: { userID: req.query.userID }});
+      result.delete += ret ? ret : 0;
+      ret = (await db.CoursePrereqs.bulkCreate(data["prereqs"])).length;
+      result.insert += ret ? ret : 0;
+    }
+    if(data["valid-tags"]){
+      ret = await db.CourseTypes.destroy({ where: { userID: req.query.userID, isException: 0 }});
+      result.delete += ret ? ret : 0;
+      ret = (await db.CourseTypes.bulkCreate(data["valid-tags"]), {ignoreDuplicates: [true]}).length;
+      result.insert += ret ? ret : 0;
+    }
+    if(data["exceptions"]){
+      ret = await db.CourseTypes.destroy({ where: { userID: req.query.userID, isException: 1 }});
+      result.delete += ret ? ret : 0;
+      ret = (await db.CourseTypes.bulkCreate(data["exceptions"], {ignoreDuplicates: [true]})).length;
+      result.insert += ret ? ret : 0;
+    }
+    if(data["replacements"]){
+      ret = await db.CourseReplacements.destroy({ where: { userID: req.query.userID }});
+      result.delete += ret ? ret : 0;
+      ret = (await db.CourseReplacements.bulkCreate(data["replacements"], {ignoreDuplicates: [true]})).length;
+      result.insert += ret ? ret : 0;
+    }
+    if(data["course-groups"]){
+      ret = await db.CourseGroups.destroy({ where: { userID: req.query.userID }});
+      result.delete += ret ? ret : 0;
+      ret = (await db.CourseGroups.bulkCreate(data["course-groups"], {ignoreDuplicates: [true]})).length;
+      result.insert += ret ? ret : 0;
+    }
+    if(data["matrixes"]){
+      ret = await CoreCourse.destroy({ where: { userID: req.query.userID }});
+      result.delete += ret ? ret : 0;
+      ret = (await CoreCourse.bulkCreate(data["matrixes"], {ignoreDuplicates: [true]})).length;
+      result.insert += ret ? ret : 0;
+    }
+    
 
-    result.delete = await CoreCourse.destroy({ where: { userID: req.query.userID }});
-    result.insert = (await CoreCourse.bulkCreate(data)).length;
-
-    res.json(result);
+    res.send(result);
   } catch (err) {
     console.log(err);
     res.status(500).send(err);
@@ -179,20 +271,20 @@ Parameters:
 router.get('/getYear', async (req, res) =>{
   try {
     let SQLQuery;
-    
     if(req.query.type === "0") {         // 0 means by credit hours (40h per year)
-      SQLQuery = "SELECT CEILING(SUM(Credit_Hrs)/40) AS 'Year' FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR' OR Enrollment.Notes_Codes IS NOT NULL) WHERE Student.fileID = '" + req.query.file + "' GROUP BY Student.Student_ID";
+      SQLQuery = "SELECT CEILING(SUM(Credit_Hrs)/40) AS 'Year',  YEAR(Student.Start_Date) AS 'YearOf', MONTH(Student.Start_Date) AS 'MonthOf' FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR' OR Enrollment.Notes_Codes IS NOT NULL) WHERE Student.fileID = '" + req.query.file + "' GROUP BY Student.Student_ID";
     }
     else if(req.query.type === "1") {    // 1 means by exact start date
-      SQLQuery = "SELECT CEILING(DATEDIFF(NOW(), Start_Date)/365) AS 'Year' FROM Student WHERE Student.fileID = '" + req.query.file + "'";
+      SQLQuery = "SELECT CEILING(DATEDIFF(NOW(), Start_Date)/365) AS 'Year',  YEAR(Student.Start_Date) AS 'YearOf', MONTH(Student.Start_Date) AS 'MonthOf' FROM Student WHERE Student.fileID = '" + req.query.file + "'";
     }
     else if(req.query.type === "2") {    // 2 means by cohort
-      SQLQuery = "SELECT CEILING(DATEDIFF(NOW(), ADDDATE(Start_Date, -243))/365) AS 'Year' FROM Student WHERE Student.fileID = '" + req.query.file + "'";
+      SQLQuery = "SELECT CEILING(DATEDIFF(NOW(), ADDDATE(Start_Date, -243))/365) AS 'Year',  YEAR(Student.Start_Date) AS 'YearOf', MONTH(Student.Start_Date) AS 'MonthOf' FROM Student WHERE Student.fileID = '" + req.query.file + "'";
     }
     else if(req.query.type === "3") {    // 3 means by core Courses
-      SQLQuery = "SELECT COUNT(Enrollment.Student_ID) AS 'Year' FROM CoreCourse LEFT JOIN Enrollment ON CoreCourse.Course = Enrollment.Course AND CoreCourse.userID = " + req.query.userID + " RIGHT JOIN Student ON Student.Student_ID = Enrollment.Student_ID AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR' OR Enrollment.Notes_Codes IS NOT NULL) WHERE Student.fileID = '" + req.query.file + "' GROUP BY Student.Student_ID";
+      SQLQuery = "SELECT COUNT(Enrollment.Student_ID) AS 'Year',  YEAR(Student.Start_Date) AS 'YearOf', MONTH(Student.Start_Date) AS 'MonthOf' FROM CoreCourse LEFT JOIN Enrollment ON CoreCourse.Course = Enrollment.Course AND CoreCourse.userID = " + req.query.userID + " RIGHT JOIN Student ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID AND CoreCourse.SheetName = CONCAT(YEAR(ADDDATE(student.Start_Date, -243)), '-', (YEAR(ADDDATE(student.Start_Date, -243))+1)%100) AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR' OR Enrollment.Notes_Codes IS NOT NULL) WHERE Student.fileID = '" + req.query.file + "' GROUP BY Student.Student_ID;"
+
     }
-    else if(req.query.type === "4") {    // 4 means by the fixed SWE requirements
+    else if(req.query.type === "4") {    // 4 means by the fixed SWE requirements+
       var searchObject = JSON.parse(req.query.searchObject);
       
       SQLQuery = "SELECT SUM(IF(";
@@ -234,15 +326,17 @@ router.get('/getYear', async (req, res) =>{
         SQLQuery += "FALSE";
       }
 
-      SQLQuery += ",  10000, 0)))) AS 'CourseCount', SUM(Credit_Hrs) AS 'CreditHours' FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR' OR Enrollment.Notes_Codes IS NOT NULL) WHERE Student.fileID = '" + req.query.file + "' GROUP BY Student.Student_ID";
+      SQLQuery += ",  10000, 0)))) AS 'CourseCount', SUM(Credit_Hrs) AS 'CreditHours',  YEAR(Student.Start_Date) AS 'YearOf', MONTH(Student.Start_Date) AS 'MonthOf'  FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR' OR Enrollment.Notes_Codes IS NOT NULL) WHERE Student.fileID = '" + req.query.file + "' GROUP BY Student.Student_ID";
     }
     else {
       res.json([]);
       return;
     }
 
-
+    
+    
     const resultTable = await sequelize.query(SQLQuery);
+
     if(req.query.type === "3") {         // Formatting for the by core course
       for(let i = 0; i < resultTable[0].length; i++) {
         if(resultTable[0][i].Year < 13) {
@@ -278,29 +372,51 @@ router.get('/getYear', async (req, res) =>{
         }
       }
     }
-
-    //console.log(req.query);
+    
     if(req.query.count === "true") {
-      let finalTable = [0,0,0,0];
+      let finalTable = [[0,0,0,0], 
+                [0,0,0,0]];
+      
       for(let i = 0; i < resultTable[0].length; i++){
         if(resultTable[0][i].Year !== "null"){
+          resultTable[0][i].YearOf -= resultTable[0][i].MonthOf < 9 ? 1 : 0;
           if(resultTable[0][i].Year <= "1"){
-            finalTable[0] += 1;
+            finalTable[0][0] += 1;
+            if(req.query.year == resultTable[0][i].YearOf){
+              finalTable[1][0] += 1;
+            }
           }
           else if(resultTable[0][i].Year == "2"){
-            finalTable[1] += 1;
+            finalTable[0][1] += 1;
+            if(req.query.year == resultTable[0][i].YearOf){
+              finalTable[1][1] += 1;
+            }
           }
           else if(resultTable[0][i].Year == "3"){
-            finalTable[2] += 1;
+            finalTable[0][2] += 1;
+            if(req.query.year == resultTable[0][i].YearOf){
+              finalTable[1][2] += 1;
+            }
           }
           else if(resultTable[0][i].Year >= "4"){
-            finalTable[3] += 1;
+            finalTable[0][3] += 1;
+            if(req.query.year == resultTable[0][i].YearOf){
+              finalTable[1][3] += 1;
+            }
           }
         }
       }
-      //console.log(finalTable)
-    let rankObject = [{countName: "FIR", Count: finalTable[0]}, {countName: "SOP", Count: finalTable[1]}, {countName: "JUN", Count: finalTable[2]}, {countName: "SEN", Count: finalTable[3]}];
-    res.json(rankObject);
+
+      
+      let rankObject = [];
+      if(req.query.year !== "Total" && (typeof req.query.year !== 'undefined')){
+        rankObject = [{countName: "FIR", CountTotal: finalTable[1][0]}, {countName: "SOP", CountTotal: finalTable[1][1]}, {countName: "JUN", CountTotal: finalTable[1][2]}, {countName: "SEN", CountTotal: finalTable[1][3]}];
+      }
+      else{
+        rankObject = [{countName: "FIR", CountTotal: finalTable[0][0]}, {countName: "SOP", CountTotal: finalTable[0][1]}, {countName: "JUN", CountTotal: finalTable[0][2]}, {countName: "SEN", CountTotal: finalTable[0][3]}];
+      }
+
+      res.json(rankObject);
 
     } else {
       res.json(resultTable[0]);
@@ -312,14 +428,37 @@ router.get('/getYear', async (req, res) =>{
 })
 
 /**
+ * API endpoint to get all avaible years
+ * Parameters:
+ * file = the fileID
+ */
+router.get('/getStartYears', async (req, res) =>{
+  try{
+    let sqlQuery;
+    sqlQuery = "SELECT YEAR(Student.Start_Date) AS Year FROM Student WHERE Student.fileID = '" + req.query.file + "' GROUP BY YEAR(Student.Start_Date)";
+    const resultTable = await sequelize.query(sqlQuery);
+    res.json(resultTable[0]);
+    
+  } catch (err) {
+    console.error(err);
+  }
+});
+
+/**
  * API endpoint to get the count of students per entered campus
  * Parameters:
  *  file = The file ID
+ *  year = For entered year
  */
 router.get('/getCampusCounts', async (req, res) =>{
   try{
     let sqlQuery;
-    sqlQuery = "SELECT Student.campus AS countName, COUNT(Student.Student_ID) AS Count FROM Student WHERE Student.fileID = '" + req.query.file + "' GROUP BY Student.campus";
+    if(req.query.year !== "Total" && (typeof req.query.year !== 'undefined')){
+      sqlQuery = "SELECT Student.campus AS countName, COUNT(Student.Student_ID) AS Count FROM Student WHERE Student.fileID = '" + req.query.file + "' AND YEAR(ADDDATE(student.Start_Date, -243)) = '" + req.query.year + "' GROUP BY Student.campus";
+    }
+    else{
+      sqlQuery = "SELECT Student.campus AS countName, COUNT(Student.Student_ID) AS Count FROM Student WHERE Student.fileID = '" + req.query.file + "' GROUP BY Student.campus";
+    }
     const resultTable = await sequelize.query(sqlQuery);
     res.json(resultTable[0]);
   } catch (err) {
@@ -350,10 +489,17 @@ router.get('/getCourseCounts', async (req, res) =>{
  * API endpoint that gets counts of coops
  * Parameters:
  *  file = The file ID
+ *  year = For entered year
  */
 router.get('/getCoopCounts', async (req, res) =>{
   try{
-    let sqlQuery = "SELECT Enrollment.Course AS countName, Count(DISTINCT Student.student_ID) AS Count FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID WHERE Student.fileID = '" + req.query.file + "' AND (Enrollment.Course LIKE '%COOP' OR Enrollment.Course LIKE '%PEP') GROUP BY Enrollment.Course";
+    let sqlQuery
+    if(req.query.year !== "Total" && (typeof req.query.year !== 'undefined')){
+      sqlQuery = "SELECT Enrollment.Course AS countName, Count(DISTINCT Student.student_ID) AS Count FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID WHERE Student.fileID = '" + req.query.file + "' AND YEAR(ADDDATE(student.Start_Date, -243)) = '" + req.query.year + "' AND (Enrollment.Course LIKE '%COOP' OR Enrollment.Course LIKE '%PEP') GROUP BY Enrollment.Course";
+    }
+    else{
+      sqlQuery = "SELECT Enrollment.Course AS countName, Count(DISTINCT Student.student_ID) AS Count FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID WHERE Student.fileID = '" + req.query.file + "' AND (Enrollment.Course LIKE '%COOP' OR Enrollment.Course LIKE '%PEP') GROUP BY Enrollment.Course";
+    }
     const resultTable = await sequelize.query(sqlQuery);
     
     //console.log(resultTable[0]);
@@ -362,5 +508,247 @@ router.get('/getCoopCounts', async (req, res) =>{
     console.error(err);
     res.status(500).send(err);
   }
-})
+});
+
+/**
+ * API endpoint that gets a list of completed, in progress, and required for Core, TE, NS, etc. courses 
+ * Parameters:
+ *  userId = login id
+ *  year = year range (Ex. 2020-21)
+ *  studentId = the id of the student
+ *  fileId = the fileId
+ */
+router.get('/getCompleteAudit', async (req, res) => {
+  try{
+    // SQLQuery that returns all the information needed for the audit. 
+    let sqlQuery = `SELECT 
+                        enrollment.Course, 
+                        CoreReplacements.columnID, 
+                        coursetypes.Type, 
+                        enrollment.Grade, 
+                        1 AS 'Taken', 
+                        coursetypes.isException,
+                        CoreReplacements.replaces,
+                        enrollment.Credit_Hrs
+                    FROM 
+                        enrollment 
+                    LEFT JOIN 
+                        (SELECT 
+                            *,
+                            NULL AS "replaces"
+                        FROM 
+                            corecourse 
+                        WHERE 
+                            corecourse.userID = ${req.query.userId} AND 
+                            corecourse.sheetName = '${req.query.year}' 
+                        UNION 
+                        SELECT 
+                            corecourse.userID, 
+                            coursereplacements.Replaces, 
+                            corecourse.columnID, 
+                            corecourse.sheetName,
+                            corecourse.Course
+                        FROM 
+                            corecourse 
+                        INNER JOIN 
+                            coursereplacements 
+                        ON 
+                            corecourse.Course = coursereplacements.Course AND 
+                            corecourse.userID = coursereplacements.userID 
+                        WHERE 
+                            corecourse.userID = ${req.query.userId} AND 
+                            corecourse.sheetName = '${req.query.year}' 
+                        ) CoreReplacements 
+                    ON 
+                        enrollment.Course = CoreReplacements.Course AND 
+                        CoreReplacements.sheetName = '${req.query.year}' AND 
+                        CoreReplacements.userID = ${req.query.userId} 
+                    LEFT JOIN 
+                        coursetypes 
+                    ON 
+                        enrollment.Course LIKE CONCAT(coursetypes.Course, '%') AND 
+                        coursetypes.userID = ${req.query.userId} 
+                    WHERE 
+                        enrollment.Student_ID = ${req.query.studentId} AND 
+                        enrollment.fileID = '${req.query.fileId}' AND
+                        (Enrollment.Grade IS NULL OR 
+                            NOT (Enrollment.Grade = 'W' OR 
+                                Enrollment.Grade = 'WF' OR 
+                                Enrollment.Grade = 'WD' OR 
+                                Enrollment.Grade = 'D' OR 
+                                Enrollment.Grade = 'F' OR 
+                                Enrollment.Grade = 'NCR' OR 
+                                Enrollment.Notes_Codes IS NOT NULL
+                                )
+                        ) 
+                    UNION ALL 
+                    SELECT 
+                        corecourse.Course, 
+                        corecourse.columnID, 
+                        NULL, 
+                        NULL, 
+                        0, 
+                        NULL,
+                        NULL,
+                        credHrsEnrollment.Credit_Hrs   
+                    FROM 
+                        enrollment 
+                    RIGHT JOIN 
+                        corecourse 
+                    ON 
+                        enrollment.Course = corecourse.Course AND 
+                        enrollment.Student_ID = ${req.query.studentId} AND
+                        enrollment.fileID = '${req.query.fileId}' 
+                    LEFT JOIN
+                      enrollment AS credHrsEnrollment
+                    ON
+                      credHrsEnrollment.Course = corecourse.Course
+                    WHERE 
+                        corecourse.sheetName = '${req.query.year}' AND 
+                        corecourse.userID = ${req.query.userId} AND 
+                        enrollment.Course IS NULL
+                    GROUP BY
+                        corecourse.Course;
+                    `;            
+        
+    const resultTable = await sequelize.query(sqlQuery);
+    
+    // necessary format to give to the UI
+    const formattedAudit = {
+      core: {ccr: 0, cr: 0, completed: [], progress: [], required: [] },
+      te:   {ccr: 0, completed: [], progress: [] },
+      ns:   {ccr: 0, completed: [], progress: [] },
+      cse:  {ccr: 0, completed: [], progress: [] }
+    };
+    
+    // storing the course that are being replaced
+    const courseReplaces = [];
+
+    /**
+     *  going through each JSON object (course) and adding it to the appropriate array in the formattedAudit JSON object
+     *  columnId != null  | core course
+     *  grade != null     | the course is completed
+     *  grade = null      | the course is in progress
+     *  taken = 0         | the course is required
+     *  replaces != null  | a course replaces another course
+     *  isException = 1   | the course is an excpetion for that type (TE,NS,CSE)
+     */
+    resultTable[0].forEach((course) => {
+      if(course.columnID != null) {
+        if(course.isException != 1) {
+          if(course.Taken == 0) {
+              formattedAudit.core.required.push(course.Course);
+              formattedAudit.core.cr += course.Credit_Hrs ? parseInt(course.Credit_Hrs) : 0;
+          } else {
+            if(course.Grade != null) {
+              if(!formattedAudit.core.completed.includes(course.Course)) {
+                if(course.replaces) {
+                  courseReplaces.push({name: course.replaces, crdhrs: course.Credit_Hrs});
+                  formattedAudit.core.completed.push(`${course.replaces} **(${course.Course})`);
+                } else {
+                  formattedAudit.core.completed.push(course.Course);
+                }
+                formattedAudit.core.ccr += parseInt(course.Credit_Hrs);
+              }
+            } else {
+              if(course.replaces) {
+                courseReplaces.push({name: course.replaces, crdhrs: course.Credit_Hrs});
+                formattedAudit.core.progress.push(`${course.replaces} **(${course.Course})`);
+              } else {
+                formattedAudit.core.progress.push(course.Course);
+              }
+            }
+          }
+        }
+      } else if (!course.Course.match(".*(COOP|PEP)")){
+        switch(course.Type){
+          case "TE":
+            if(course.Grade != null) {
+              if(course.isException == 1) {
+                if(formattedAudit.te.completed.includes(course.Course)) {
+                  formattedAudit.te.completed.splice(formattedAudit.te.completed.indexOf(course.Course), 1);
+                }
+                formattedAudit.te.ccr -= parseInt(course.Credit_Hrs);
+              } else {
+                formattedAudit.te.completed.push(course.Course);
+                formattedAudit.te.ccr += parseInt(course.Credit_Hrs);
+              }
+            } else {
+              if(course.isException == 1) {
+                if(formattedAudit.te.progress.includes(course.Course)) {
+                  formattedAudit.te.progress.splice(formattedAudit.te.progress.indexOf(course.Course), 1);
+                }
+              } else {
+                formattedAudit.te.progress.push(course.Course);
+              }
+            }
+            break;
+          case "NS":
+            if(course.Grade != null) {
+              if(course.isException == 1) {
+                if(formattedAudit.ns.completed.includes(course.Course)) {
+                  formattedAudit.ns.completed.splice(formattedAudit.ns.progress.indexOf(course.Course), 1);
+                }
+                formattedAudit.ns.ccr -= parseInt(course.Credit_Hrs);
+              } else {
+                formattedAudit.ns.completed.push(course.Course);
+                formattedAudit.ns.ccr += parseInt(course.Credit_Hrs);
+              }
+            } else {
+              if(course.isException == 1) {
+                if(formattedAudit.ns.progress.includes(course.Course)) {
+                  formattedAudit.ns.progress.splice(formattedAudit.ns.progress.indexOf(course.Course), 1);
+                }
+              } else {
+                formattedAudit.ns.progress.push(course.Course);
+              }
+            }
+            break;
+          case "CSE-ITS":
+          case "CSE-HSS":
+          case "CSE-OPEN":
+            if(!formattedAudit.cse.completed.includes(course.Course)) {
+              if(course.Grade != null) {
+                if(course.isException == 1) {
+                  if(formattedAudit.cse.completed.includes(course.Course)) {
+                    formattedAudit.cse.completed.splice(formattedAudit.cse.progress.indexOf(course.Course), 1);
+                  }
+                  formattedAudit.cse.ccr -= parseInt(course.Credit_Hrs);
+                } else {
+                  formattedAudit.cse.completed.push(course.Course);
+                  formattedAudit.cse.ccr += parseInt(course.Credit_Hrs);
+                }
+              } else {
+                if(course.isException == 1) {
+                  if(formattedAudit.cse.progress.includes(course.Course)) {
+                    formattedAudit.cse.progress.splice(formattedAudit.cse.progress.indexOf(course.Course), 1);
+                  }
+                } else {
+                  formattedAudit.cse.progress.push(course.Course);
+                }
+              }
+            }
+            break;
+          default:
+        }
+      }
+    });
+
+    for(let i = 0; i < courseReplaces.length; i++) {
+      let courseIndex = formattedAudit.core.required.indexOf(courseReplaces[i].name);
+      if(courseIndex != -1) {
+        formattedAudit.core.cr -= parseInt(courseReplaces[i].crdhrs);
+        formattedAudit.core.required.splice(courseIndex, 1);
+      }
+    }
+
+    formattedAudit.core.cr += formattedAudit.core.ccr;
+
+    res.json(formattedAudit);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send(err);
+  }
+});
+
 module.exports = router;

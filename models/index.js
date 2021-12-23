@@ -6,8 +6,8 @@ const sequelize = new Sequelize(
   process.env.DB_USERNAME,
   process.env.DB_PASSWORD,
   {
-    host: 'themis.xn--9xa.network',
-    dialect: 'mariadb',
+    host: 'swe4103t2bruh.mysql.database.azure.com',
+    dialect: 'mysql',
     logging: false
   }
 );
@@ -17,6 +17,10 @@ const student = require('./student');
 const enrollment = require('./enrollment');
 const fileTime = require('./fileTime');
 const CoreCourse = require('./coreCourse');
+const CourseGroups = require('./courseGroups');
+const CoursePrereqs = require('./coursePrereqs');
+const CourseReplacements = require('./courseReplacements');
+const CourseTypes = require('./courseTypes');
 
 const db = {};
 
@@ -30,5 +34,9 @@ db.Student = student(sequelize, Sequelize);
 db.Enrollment = enrollment(sequelize, Sequelize);
 db.FileTime = fileTime(sequelize, Sequelize);
 db.CoreCourse = CoreCourse(sequelize, Sequelize);
+db.CourseGroups = CourseGroups(sequelize, Sequelize);
+db.CoursePrereqs = CoursePrereqs(sequelize, Sequelize);
+db.CourseReplacements = CourseReplacements(sequelize, Sequelize);
+db.CourseTypes = CourseTypes(sequelize, Sequelize);
 
 module.exports = db;
