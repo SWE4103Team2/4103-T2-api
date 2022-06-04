@@ -6,7 +6,7 @@ const sequelize = new Sequelize(
   process.env.DB_USERNAME,
   process.env.DB_PASSWORD,
   {
-    host: 'swe4103t2bruh.mysql.database.azure.com',
+    host: 'localhost',
     dialect: 'mysql',
     logging: false
   }
@@ -21,6 +21,7 @@ const CourseGroups = require('./courseGroups');
 const CoursePrereqs = require('./coursePrereqs');
 const CourseReplacements = require('./courseReplacements');
 const CourseTypes = require('./courseTypes');
+const Login = require('./login');
 
 const db = {};
 
@@ -38,5 +39,6 @@ db.CourseGroups = CourseGroups(sequelize, Sequelize);
 db.CoursePrereqs = CoursePrereqs(sequelize, Sequelize);
 db.CourseReplacements = CourseReplacements(sequelize, Sequelize);
 db.CourseTypes = CourseTypes(sequelize, Sequelize);
+db.Login = Login(sequelize, Sequelize);
 
 module.exports = db;

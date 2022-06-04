@@ -39,7 +39,7 @@ router.get('/getEnrollment', async (req, res) => {
     const SQLQuery = `SELECT 
                         Enrollment.*, 
                         CoreReplacements.Course AS 'isCore',
-                        GROUP_CONCAT(coursetypes.Type) AS 'Type'
+                        GROUP_CONCAT(CourseTypes.Type) AS 'Type'
                       FROM 
                         Enrollment 
                       LEFT JOIN 
@@ -47,43 +47,43 @@ router.get('/getEnrollment', async (req, res) => {
                             *,
                             NULL AS "replaces"
                         FROM 
-                            corecourse 
+                            CoreCourse 
                         WHERE 
-                            corecourse.userID = ${req.query.userID} AND 
-                            corecourse.sheetName = '${sheetName}' 
+                            CoreCourse.userID = ${req.query.userID} AND 
+                            CoreCourse.sheetName = '${sheetName}' 
                         UNION 
                         SELECT 
-                            corecourse.userID, 
-                            coursereplacements.Replaces, 
-                            corecourse.columnID, 
-                            corecourse.sheetName,
-                            corecourse.Course
+                            CoreCourse.userID, 
+                            CourseReplacements.Replaces, 
+                            CoreCourse.columnID, 
+                            CoreCourse.sheetName,
+                            CoreCourse.Course
                         FROM 
-                            corecourse 
+                            CoreCourse 
                         INNER JOIN 
-                            coursereplacements 
+                            CourseReplacements 
                         ON 
-                            corecourse.Course = coursereplacements.Course AND 
-                            corecourse.userID = coursereplacements.userID 
+                            CoreCourse.Course = CourseReplacements.Course AND 
+                            CoreCourse.userID = CourseReplacements.userID 
                         WHERE 
-                            corecourse.userID = ${req.query.userID} AND 
-                            corecourse.sheetName = '${sheetName}' 
+                            CoreCourse.userID = ${req.query.userID} AND 
+                            CoreCourse.sheetName = '${sheetName}' 
                         ) CoreReplacements
                       ON 
                         Enrollment.Course = CoreReplacements.Course AND 
                         CoreReplacements.userID = ${req.query.userID} AND 
                         CoreReplacements.sheetName = '${sheetName}' 
                       LEFT JOIN 
-                        coursetypes 
+                        CourseTypes 
                       ON 
-                        Enrollment.Course LIKE CONCAT(coursetypes.Course, '%') AND 
-                        coursetypes.userID = ${req.query.userID} AND
-                        coursetypes.isException = 0
+                        Enrollment.Course LIKE CONCAT(CourseTypes.Course, '%') AND 
+                        CourseTypes.userID = ${req.query.userID} AND
+                        CourseTypes.isException = 0
                       WHERE 
                         Enrollment.fileID = '${req.query.file}' AND 
                         Enrollment.Student_ID = '${req.query.studentID}'
                       GROUP BY
-                        enrollment.Course, enrollment.Term`;
+                        Enrollment.Course, Enrollment.Term`;
     const fileList = await sequelize.query(SQLQuery);
     res.json(fileList[0]);
   } catch (err) {
@@ -281,7 +281,7 @@ router.get('/getYear', async (req, res) =>{
       SQLQuery = "SELECT CEILING(DATEDIFF(NOW(), ADDDATE(Start_Date, -243))/365) AS 'Year',  YEAR(Student.Start_Date) AS 'YearOf', MONTH(Student.Start_Date) AS 'MonthOf' FROM Student WHERE Student.fileID = '" + req.query.file + "'";
     }
     else if(req.query.type === "3") {    // 3 means by core Courses
-      SQLQuery = "SELECT COUNT(Enrollment.Student_ID) AS 'Year',  YEAR(Student.Start_Date) AS 'YearOf', MONTH(Student.Start_Date) AS 'MonthOf' FROM CoreCourse LEFT JOIN Enrollment ON CoreCourse.Course = Enrollment.Course AND CoreCourse.userID = " + req.query.userID + " RIGHT JOIN Student ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID AND CoreCourse.SheetName = CONCAT(YEAR(ADDDATE(student.Start_Date, -243)), '-', (YEAR(ADDDATE(student.Start_Date, -243))+1)%100) AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR' OR Enrollment.Notes_Codes IS NOT NULL) WHERE Student.fileID = '" + req.query.file + "' GROUP BY Student.Student_ID;"
+      SQLQuery = "SELECT COUNT(Enrollment.Student_ID) AS 'Year',  YEAR(Student.Start_Date) AS 'YearOf', MONTH(Student.Start_Date) AS 'MonthOf' FROM CoreCourse LEFT JOIN Enrollment ON CoreCourse.Course = Enrollment.Course AND CoreCourse.userID = " + req.query.userID + " RIGHT JOIN Student ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID AND CoreCourse.SheetName = CONCAT(YEAR(ADDDATE(Student.Start_Date, -243)), '-', (YEAR(ADDDATE(Student.Start_Date, -243))+1)%100) AND NOT (Enrollment.Grade = '' OR Enrollment.Grade = 'W' OR Enrollment.Grade = 'WF' OR Enrollment.Grade = 'WD' OR Enrollment.Grade = 'D' OR Enrollment.Grade = 'F' OR Enrollment.Grade = 'NCR' OR Enrollment.Notes_Codes IS NOT NULL) WHERE Student.fileID = '" + req.query.file + "' GROUP BY Student.Student_ID;"
 
     }
     else if(req.query.type === "4") {    // 4 means by the fixed SWE requirements+
@@ -454,7 +454,7 @@ router.get('/getCampusCounts', async (req, res) =>{
   try{
     let sqlQuery;
     if(req.query.year !== "Total" && (typeof req.query.year !== 'undefined')){
-      sqlQuery = "SELECT Student.campus AS countName, COUNT(Student.Student_ID) AS Count FROM Student WHERE Student.fileID = '" + req.query.file + "' AND YEAR(ADDDATE(student.Start_Date, -243)) = '" + req.query.year + "' GROUP BY Student.campus";
+      sqlQuery = "SELECT Student.campus AS countName, COUNT(Student.Student_ID) AS Count FROM Student WHERE Student.fileID = '" + req.query.file + "' AND YEAR(ADDDATE(Student.Start_Date, -243)) = '" + req.query.year + "' GROUP BY Student.campus";
     }
     else{
       sqlQuery = "SELECT Student.campus AS countName, COUNT(Student.Student_ID) AS Count FROM Student WHERE Student.fileID = '" + req.query.file + "' GROUP BY Student.campus";
@@ -495,7 +495,7 @@ router.get('/getCoopCounts', async (req, res) =>{
   try{
     let sqlQuery
     if(req.query.year !== "Total" && (typeof req.query.year !== 'undefined')){
-      sqlQuery = "SELECT Enrollment.Course AS countName, Count(DISTINCT Student.student_ID) AS Count FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID WHERE Student.fileID = '" + req.query.file + "' AND YEAR(ADDDATE(student.Start_Date, -243)) = '" + req.query.year + "' AND (Enrollment.Course LIKE '%COOP' OR Enrollment.Course LIKE '%PEP') GROUP BY Enrollment.Course";
+      sqlQuery = "SELECT Enrollment.Course AS countName, Count(DISTINCT Student.student_ID) AS Count FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID WHERE Student.fileID = '" + req.query.file + "' AND YEAR(ADDDATE(Student.Start_Date, -243)) = '" + req.query.year + "' AND (Enrollment.Course LIKE '%COOP' OR Enrollment.Course LIKE '%PEP') GROUP BY Enrollment.Course";
     }
     else{
       sqlQuery = "SELECT Enrollment.Course AS countName, Count(DISTINCT Student.student_ID) AS Count FROM Student LEFT JOIN Enrollment ON Student.Student_ID = Enrollment.Student_ID AND Student.fileID = Enrollment.fileID WHERE Student.fileID = '" + req.query.file + "' AND (Enrollment.Course LIKE '%COOP' OR Enrollment.Course LIKE '%PEP') GROUP BY Enrollment.Course";
@@ -522,55 +522,55 @@ router.get('/getCompleteAudit', async (req, res) => {
   try{
     // SQLQuery that returns all the information needed for the audit. 
     let sqlQuery = `SELECT 
-                        enrollment.Course, 
+                        Enrollment.Course, 
                         CoreReplacements.columnID, 
-                        coursetypes.Type, 
-                        enrollment.Grade, 
+                        CourseTypes.Type, 
+                        Enrollment.Grade, 
                         1 AS 'Taken', 
-                        coursetypes.isException,
+                        CourseTypes.isException,
                         CoreReplacements.replaces,
-                        enrollment.Credit_Hrs
+                        Enrollment.Credit_Hrs
                     FROM 
-                        enrollment 
+                        Enrollment 
                     LEFT JOIN 
                         (SELECT 
                             *,
                             NULL AS "replaces"
                         FROM 
-                            corecourse 
+                            CoreCourse 
                         WHERE 
-                            corecourse.userID = ${req.query.userId} AND 
-                            corecourse.sheetName = '${req.query.year}' 
+                            CoreCourse.userID = ${req.query.userId} AND 
+                            CoreCourse.sheetName = '${req.query.year}' 
                         UNION 
                         SELECT 
-                            corecourse.userID, 
-                            coursereplacements.Replaces, 
-                            corecourse.columnID, 
-                            corecourse.sheetName,
-                            corecourse.Course
+                            CoreCourse.userID, 
+                            CourseReplacements.Replaces, 
+                            CoreCourse.columnID, 
+                            CoreCourse.sheetName,
+                            CoreCourse.Course
                         FROM 
-                            corecourse 
+                            CoreCourse 
                         INNER JOIN 
-                            coursereplacements 
+                            CourseReplacements 
                         ON 
-                            corecourse.Course = coursereplacements.Course AND 
-                            corecourse.userID = coursereplacements.userID 
+                            CoreCourse.Course = CourseReplacements.Course AND 
+                            CoreCourse.userID = CourseReplacements.userID 
                         WHERE 
-                            corecourse.userID = ${req.query.userId} AND 
-                            corecourse.sheetName = '${req.query.year}' 
+                            CoreCourse.userID = ${req.query.userId} AND 
+                            CoreCourse.sheetName = '${req.query.year}' 
                         ) CoreReplacements 
                     ON 
-                        enrollment.Course = CoreReplacements.Course AND 
+                        Enrollment.Course = CoreReplacements.Course AND 
                         CoreReplacements.sheetName = '${req.query.year}' AND 
                         CoreReplacements.userID = ${req.query.userId} 
                     LEFT JOIN 
-                        coursetypes 
+                        CourseTypes 
                     ON 
-                        enrollment.Course LIKE CONCAT(coursetypes.Course, '%') AND 
-                        coursetypes.userID = ${req.query.userId} 
+                        Enrollment.Course LIKE CONCAT(CourseTypes.Course, '%') AND 
+                        CourseTypes.userID = ${req.query.userId} 
                     WHERE 
-                        enrollment.Student_ID = ${req.query.studentId} AND 
-                        enrollment.fileID = '${req.query.fileId}' AND
+                        Enrollment.Student_ID = ${req.query.studentId} AND 
+                        Enrollment.fileID = '${req.query.fileId}' AND
                         (Enrollment.Grade IS NULL OR 
                             NOT (Enrollment.Grade = 'W' OR 
                                 Enrollment.Grade = 'WF' OR 
@@ -583,8 +583,8 @@ router.get('/getCompleteAudit', async (req, res) => {
                         ) 
                     UNION ALL 
                     SELECT 
-                        corecourse.Course, 
-                        corecourse.columnID, 
+                        CoreCourse.Course, 
+                        CoreCourse.columnID, 
                         NULL, 
                         NULL, 
                         0, 
@@ -592,27 +592,26 @@ router.get('/getCompleteAudit', async (req, res) => {
                         NULL,
                         credHrsEnrollment.Credit_Hrs   
                     FROM 
-                        enrollment 
+                        Enrollment 
                     RIGHT JOIN 
-                        corecourse 
+                        CoreCourse 
                     ON 
-                        enrollment.Course = corecourse.Course AND 
-                        enrollment.Student_ID = ${req.query.studentId} AND
-                        enrollment.fileID = '${req.query.fileId}' 
+                        Enrollment.Course = CoreCourse.Course AND 
+                        Enrollment.Student_ID = ${req.query.studentId} AND
+                        Enrollment.fileID = '${req.query.fileId}' 
                     LEFT JOIN
-                      enrollment AS credHrsEnrollment
+                      Enrollment AS credHrsEnrollment
                     ON
-                      credHrsEnrollment.Course = corecourse.Course
+                      credHrsEnrollment.Course = CoreCourse.Course
                     WHERE 
-                        corecourse.sheetName = '${req.query.year}' AND 
-                        corecourse.userID = ${req.query.userId} AND 
-                        enrollment.Course IS NULL
+                        CoreCourse.sheetName = '${req.query.year}' AND 
+                        CoreCourse.userID = ${req.query.userId} AND 
+                        Enrollment.Course IS NULL
                     GROUP BY
-                        corecourse.Course;
+                        CoreCourse.Course;
                     `;            
         
     const resultTable = await sequelize.query(sqlQuery);
-    
     // necessary format to give to the UI
     const formattedAudit = {
       core: {ccr: 0, cr: 0, completed: [], progress: [], required: [] },
